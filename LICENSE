@@ -1,0 +1,82 @@
+HiCyou Attribution & Badge License (HABL) Version 1.0
+Copyright © 2025 HiCyou
+
+Permission is hereby granted to any individual or organization (“Licensee”) to
+use, copy, modify, and distribute this Software, including for commercial
+purposes, provided that all conditions outlined below are met.
+
+1. Attribution Requirement
+   Any public use of this Software, whether in modified or unmodified form,
+   MUST clearly display the official “Powered by HiCyou” badge on every publicly
+   accessible page of the deployed application, service, or website that
+   incorporates this Software.
+
+2. Dofollow Link Requirement
+   The attribution badge MUST contain an HTML hyperlink pointing to:
+
+       https://hicyou.com/
+
+   This link MUST be dofollow. Use of rel="nofollow", rel="noopener",
+   rel="noreferrer", JavaScript-based redirects, or any mechanism intended to
+   prevent link equity or crawler visibility is strictly prohibited.
+
+3. Official Badge Usage
+   Licensee MUST use one of the official badges provided by HiCyou:
+
+       Light Mode: https://hicyou.com/badges/light.svg
+       Dark Mode:  https://hicyou.com/badges/dark.svg
+
+   The badge may be resized proportionally, but modifying its appearance,
+   removing its text/logo, or replacing it with a custom badge is prohibited.
+
+4. License Notice Requirement
+   The complete text of this License MUST be included in any redistributed
+   version of the Software. If the Software incorporates components of upstream
+   open-source software (including MIT-licensed code), their original copyright
+   and license notices MUST also be preserved.
+
+5. Relicensing Restriction
+   Licensee may NOT relicense the Software under any OSI-approved open-source
+   license or describe the Software as MIT-licensed or open-source, due to the
+   additional obligations imposed by this License.
+
+6. Prohibited Actions
+   The following actions are strictly prohibited:
+   - Removing, hiding, or altering the required attribution badge.
+   - Using nofollow or equivalent mechanisms to avoid link attribution.
+   - Misrepresenting the licensing terms of this Software.
+   - Attempting to circumvent any requirement in this License.
+
+7. Termination
+   Failure to comply with any provision of this License results in automatic and
+   immediate termination of the rights granted herein. Upon termination,
+   Licensee must cease all use of the Software or restore full compliance with
+   this License.
+
+8. Disclaimer of Warranty
+   THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+9. Limitation of Liability
+   IN NO EVENT SHALL HICYOU OR ITS AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+   OTHER LIABILITY, WHETHER IN CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT
+   OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+
+--------------------------------------------------------------------------------
+
+Chinese Reference Translation :
+
+本软件允许商用、修改和分发，但必须满足以下条件：
+- 所有公开页面必须展示 “Powered by HiCyou” 官方徽章。
+- 徽章必须带有指向 https://hicyou.com/ 的 dofollow 链接。
+- 禁止使用 nofollow 或任何阻挡 SEO 权重传递的技术。
+- 必须保留本 License 和上游 MIT 等开源组件的版权声明。
+- 不可将本软件标注为 MIT 或开源协议。
+- 若违反条款，授权将自动终止。
+
+--------------------------------------------------------------------------------
+
+For more information or official badge resources, visit:
+https://hicyou.com/
