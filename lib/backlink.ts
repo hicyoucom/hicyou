@@ -1,9 +1,9 @@
 /**
  * 反向链接验证工具
- * 检查目标网站是否包含指向 https://qoo.im 的链接
  */
 
-const REQUIRED_BACKLINK = "https://qoo.im";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hicyou.com";
+const REQUIRED_BACKLINK = SITE_URL;
 
 /**
  * 验证URL是否包含反向链接
@@ -14,7 +14,7 @@ export async function verifyBacklink(url: string): Promise<boolean> {
   try {
     // 规范化URL
     const targetUrl = url.startsWith("http") ? url : `https://${url}`;
-    
+
     // 获取网页内容
     const response = await fetch(targetUrl, {
       headers: {
@@ -30,20 +30,26 @@ export async function verifyBacklink(url: string): Promise<boolean> {
     }
 
     const html = await response.text();
-    
+
     // 检查HTML中是否包含反向链接
     // 支持多种格式：
     // 1. <a href="https://qoo.im">
     // 2. <a href='https://qoo.im'>
     // 3. <link href="https://qoo.im">
+    const siteUrlObj = new URL(SITE_URL);
+    const hostname = siteUrlObj.hostname.replace(/^www\./, '');
+    const escapedHostname = hostname.replace(/\./g, '\\.');
+
     const patterns = [
+      // Flexible match for SITE_URL, www.SITE_URL, and subpaths
+      new RegExp(`href=["']https:\\/\\/(www\\.)?${escapedHostname}(\\/.*)?["']`, 'i'),
+      // Fallback to strict match if needed (though the above covers it)
       new RegExp(`href=["']${REQUIRED_BACKLINK}["']`, "i"),
       new RegExp(`href=["']${REQUIRED_BACKLINK}/["']`, "i"),
-      new RegExp(REQUIRED_BACKLINK.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
     ];
 
     const hasBacklink = patterns.some((pattern) => pattern.test(html));
-    
+
     if (hasBacklink) {
       console.log(`✓ Backlink found on ${targetUrl}`);
     } else {

@@ -107,6 +107,24 @@ export const Footer = () => {
             <ul className="space-y-3">
               <li>
                 <Link
+                  href="/open-source"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
+                >
+                  <Github className="h-4 w-4" />
+                  Open Source
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/sponsors"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
+                >
+                  <Crown className="h-4 w-4" />
+                  Sponsors
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/pricing"
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
                 >
@@ -122,6 +140,26 @@ export const Footer = () => {
                   <FileText className="h-4 w-4" />
                   Blog
                 </Link>
+              </li>
+              <li>
+                <Link
+                  href="/backlink-database"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
+                >
+                  <FileText className="h-4 w-4" />
+                  SEO Backlink Database
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/hicyoucom/hicyou"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
+                >
+                  <Github className="h-4 w-4" />
+                  GitHub Repo
+                </a>
               </li>
             </ul>
           </div>

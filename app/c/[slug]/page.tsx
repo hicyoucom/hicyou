@@ -11,6 +11,7 @@ import { getAllBookmarks, getAllCategories, getCategoryBySlug } from "@/lib/data
 import { BookmarkCard } from "@/components/bookmark-card";
 import { BookmarkGrid } from "@/components/bookmark-grid";
 import { CategorySidebar } from "@/components/category-sidebar";
+import { CategoryPagination } from "@/components/category-pagination";
 import { TopNav } from "@/components/top-nav";
 import { Badge } from "@/components/ui/badge";
 import Balancer from "react-wrap-balancer";
@@ -18,7 +19,7 @@ import * as LucideIcons from "lucide-react";
 
 type Props = {
   params: { slug: string };
-  searchParams: { search?: string };
+  searchParams: { search?: string; page?: string };
 };
 
 export async function generateMetadata(
@@ -36,6 +37,9 @@ export async function generateMetadata(
   return {
     title: `${category.name} | Directory`,
     description: category.description || `Discover the best ${category.name} tools to boost your productivity`,
+    alternates: {
+      canonical: `/c/${params.slug}`,
+    },
   };
 }
 
@@ -62,6 +66,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
         bookmark.overview?.toLowerCase().includes(searchTerm)
       );
     });
+
+  const totalPages = Math.ceil(filteredBookmarks.length / 30);
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,15 +96,15 @@ export default async function CategoryPage({ params, searchParams }: Props) {
             <div className="relative mb-12 py-4 md:py-5 text-center overflow-hidden rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5">
               {/* Background Effects */}
               <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]"></div>
-              <div 
+              <div
                 className="absolute top-0 left-1/4 w-72 h-72 rounded-full blur-3xl opacity-20"
                 style={{ backgroundColor: category.color || 'hsl(var(--primary))' }}
               ></div>
-              <div 
+              <div
                 className="absolute bottom-0 right-1/4 w-72 h-72 rounded-full blur-3xl opacity-20"
                 style={{ backgroundColor: category.color || 'hsl(var(--primary))' }}
               ></div>
-              
+
               {/* Content */}
               <div className="relative z-10 px-4">
                 {/* Category Badge with Icon */}
@@ -106,9 +112,9 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                   {category.icon && (() => {
                     const IconComponent = (LucideIcons as any)[category.icon];
                     return IconComponent ? (
-                      <div 
+                      <div
                         className="flex items-center justify-center w-12 h-12 rounded-xl shadow-lg"
-                        style={{ 
+                        style={{
                           backgroundColor: category.color ? `${category.color}15` : 'hsl(var(--primary) / 0.1)',
                           color: category.color || 'hsl(var(--primary))'
                         }}
@@ -118,25 +124,25 @@ export default async function CategoryPage({ params, searchParams }: Props) {
                     ) : null;
                   })()}
                 </div>
-                
+
                 {/* Category Name */}
                 <h1 className="text-3xl md:text-4xl font-bold mb-2 tracking-tight leading-tight">
                   <Balancer>
                     {category.name}
                   </Balancer>
                 </h1>
-                
+
                 {/* Category Description */}
                 <p className="text-sm md:text-base text-muted-foreground mb-4 max-w-3xl mx-auto">
                   <Balancer>
                     {category.description || `Discover the best ${category.name} tools to boost your productivity`}
                   </Balancer>
                 </p>
-                
+
                 {/* Stats Badge */}
                 <div className="flex items-center justify-center gap-3 flex-wrap">
-                  <Badge 
-                    variant="secondary" 
+                  <Badge
+                    variant="secondary"
                     className="px-3 py-1 text-xs font-medium rounded-full"
                     style={{
                       backgroundColor: category.color ? `${category.color}20` : undefined,
@@ -157,35 +163,47 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 
             {/* Bookmarks Grid */}
             <BookmarkGrid>
-              {filteredBookmarks.map((bookmark) => (
-                <BookmarkCard
-                  key={bookmark.id}
-                  bookmark={{
-                    id: bookmark.id,
-                    url: bookmark.url,
-                    title: bookmark.title,
-                    description: bookmark.description,
-                    category: bookmark.category
-                      ? {
+              {filteredBookmarks
+                .slice(0, 30)
+                .map((bookmark) => (
+                  <BookmarkCard
+                    key={bookmark.id}
+                    bookmark={{
+                      id: bookmark.id,
+                      url: bookmark.url,
+                      title: bookmark.title,
+                      description: bookmark.description,
+                      category: bookmark.category
+                        ? {
                           id: bookmark.category.id.toString(),
                           name: bookmark.category.name,
                           slug: bookmark.category.slug,
                           color: bookmark.category.color || undefined,
                           icon: bookmark.category.icon || undefined,
                         }
-                      : undefined,
-                    favicon: bookmark.favicon,
-                    overview: bookmark.overview,
-                    ogImage: bookmark.ogImage,
-                    isArchived: bookmark.isArchived,
-                    isFavorite: bookmark.isFavorite,
-                    isDofollow: bookmark.isDofollow,
-                    pricingType: bookmark.pricingType,
-                    slug: bookmark.slug,
-                  }}
-                />
-              ))}
+                        : undefined,
+                      favicon: bookmark.favicon,
+                      overview: bookmark.overview,
+                      ogImage: bookmark.ogImage,
+                      isArchived: bookmark.isArchived,
+                      isFavorite: bookmark.isFavorite,
+                      isDofollow: bookmark.isDofollow,
+                      pricingType: bookmark.pricingType,
+                      slug: bookmark.slug,
+                    }}
+                  />
+                ))}
             </BookmarkGrid>
+
+            {filteredBookmarks.length > 0 && (
+              <div className="mt-8">
+                <CategoryPagination
+                  currentPage={1}
+                  totalPages={totalPages}
+                  basePath={`/c/${params.slug}`}
+                />
+              </div>
+            )}
 
             {filteredBookmarks.length === 0 && (
               <div className="py-16 text-center">

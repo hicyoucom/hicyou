@@ -59,12 +59,15 @@ export async function verifyBadge(targetUrl: string): Promise<boolean> {
     }
 
     // Also check if the badge links back to our site
-    const siteUrlLower = SITE_URL.toLowerCase();
-    const hasSiteLink = (
-      htmlLower.includes(`href="${siteUrlLower}"`) ||
-      htmlLower.includes(`href='${siteUrlLower}'`) ||
-      htmlLower.includes(`href=${siteUrlLower}`)
-    );
+    // Allow SITE_URL and any subpaths
+    const siteUrlObj = new URL(SITE_URL);
+    const hostname = siteUrlObj.hostname.replace(/^www\./, '');
+    // Escape dots for regex
+    const escapedHostname = hostname.replace(/\./g, '\\.');
+
+    // Pattern matches: https://(www.)?hostname(/.*)?
+    const siteLinkPattern = new RegExp(`href=["']https:\\/\\/(www\\.)?${escapedHostname}(\\/.*)?["']`, 'i');
+    const hasSiteLink = siteLinkPattern.test(html);
 
     if (!hasSiteLink) {
       console.log(`Site link not found in ${url}`);

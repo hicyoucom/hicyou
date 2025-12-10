@@ -20,6 +20,7 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
   onPageSizeChange?: (pageSize: number) => void;
   pageSizeOptions?: number[];
+  showPageNumbers?: boolean;
 }
 
 export function Pagination({
@@ -30,6 +31,7 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
   pageSizeOptions = [30, 50, 100],
+  showPageNumbers = true,
 }: PaginationProps) {
   const generatePageNumbers = () => {
     const pages: (number | "ellipsis")[] = [];
@@ -114,32 +116,34 @@ export function Pagination({
           <span className="sr-only">Previous page</span>
         </Button>
 
-        <div className="flex items-center gap-1">
-          {pages.map((page, index) => {
-            if (page === "ellipsis") {
-              return (
-                <div
-                  key={`ellipsis-${index}`}
-                  className="flex h-8 w-8 items-center justify-center"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </div>
-              );
-            }
+        {showPageNumbers && (
+          <div className="flex items-center gap-1">
+            {pages.map((page, index) => {
+              if (page === "ellipsis") {
+                return (
+                  <div
+                    key={`ellipsis-${index}`}
+                    className="flex h-8 w-8 items-center justify-center"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </div>
+                );
+              }
 
-            return (
-              <Button
-                key={page}
-                variant={currentPage === page ? "default" : "outline"}
-                size="icon"
-                onClick={() => onPageChange(page)}
-                className="h-8 w-8"
-              >
-                {page}
-              </Button>
-            );
-          })}
-        </div>
+              return (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="icon"
+                  onClick={() => onPageChange(page)}
+                  className="h-8 w-8"
+                >
+                  {page}
+                </Button>
+              );
+            })}
+          </div>
+        )}
 
         <Button
           variant="outline"

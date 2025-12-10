@@ -63,7 +63,7 @@ export default async function CategoriesPage() {
               <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent_85%)]"></div>
               <div className="absolute top-0 left-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 right-1/4 w-72 h-72 bg-primary/20 rounded-full blur-3xl"></div>
-              
+
               {/* Content */}
               <div className="relative z-10 px-4">
                 {/* Icon Badge */}
@@ -72,21 +72,21 @@ export default async function CategoriesPage() {
                     <Grid3x3 className="w-6 h-6 text-primary" />
                   </div>
                 </div>
-                
+
                 {/* Title */}
                 <h1 className="text-3xl md:text-4xl font-bold mb-2 tracking-tight leading-tight">
                   <Balancer>
                     All Categories
                   </Balancer>
                 </h1>
-                
+
                 {/* Description */}
                 <p className="text-sm md:text-base text-muted-foreground mb-4 max-w-3xl mx-auto">
                   <Balancer>
                     Browse all tool categories and find the one that fits your needs
                   </Balancer>
                 </p>
-                
+
                 {/* Stats Badges */}
                 <div className="flex items-center justify-center gap-3 flex-wrap">
                   <Badge variant="secondary" className="px-3 py-1 text-xs font-medium rounded-full">
@@ -104,7 +104,7 @@ export default async function CategoriesPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {categories.map((category) => {
                 const bookmarkCount = categoryCountMap.get(category.id) || 0;
-                
+
                 return (
                   <Link
                     key={category.id}
@@ -114,16 +114,16 @@ export default async function CategoriesPage() {
                     {/* Icon and Title */}
                     <div className="flex items-start gap-3">
                       {category.icon ? (
-                        <div 
+                        <div
                           className="flex h-12 w-12 items-center justify-center rounded-lg border flex-shrink-0"
-                          style={category.color ? { 
+                          style={category.color ? {
                             backgroundColor: `${category.color}15`,
                             borderColor: `${category.color}50`
                           } : undefined}
                         >
-                          <DynamicIcon 
-                            name={category.icon} 
-                            className="h-6 w-6" 
+                          <DynamicIcon
+                            name={category.icon}
+                            className="h-6 w-6"
                             style={category.color ? { color: category.color } : undefined}
                             aria-label={category.name}
                           />
@@ -135,7 +135,7 @@ export default async function CategoriesPage() {
                           </span>
                         </div>
                       )}
-                      
+
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-lg mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                           {category.name}
@@ -155,17 +155,17 @@ export default async function CategoriesPage() {
 
                     {/* Hover Arrow */}
                     <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg 
-                        className="h-5 w-5 text-primary" 
-                        fill="none" 
-                        stroke="currentColor" 
+                      <svg
+                        className="h-5 w-5 text-primary"
+                        fill="none"
+                        stroke="currentColor"
                         viewBox="0 0 24 24"
                       >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M9 5l7 7-7 7" 
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
                         />
                       </svg>
                     </div>
@@ -204,8 +204,8 @@ export default async function CategoriesPage() {
                 </div>
                 <div>
                   <div className="text-3xl font-bold text-primary mb-1">
-                    {bookmarks.length > 0 
-                      ? Math.round(bookmarks.length / categories.length) 
+                    {bookmarks.length > 0
+                      ? Math.round(bookmarks.length / categories.length)
                       : 0}
                   </div>
                   <div className="text-sm text-muted-foreground">

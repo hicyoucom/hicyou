@@ -260,14 +260,14 @@ export default function SubmitContent({ categories }: SubmitContentProps) {
               <p className="text-sm font-medium mb-2">Light Theme:</p>
               <img src="/badge/featured-light.svg" alt="Light badge" className="mb-2 h-12" />
               <code className="text-xs block break-all">
-                &lt;a href="https://qoo.im"&gt;&lt;img src="/badge/featured-light.svg" alt="Featured" /&gt;&lt;/a&gt;
+                &lt;a href="https://hicyou.com"&gt;&lt;img src="https://hicyou.com/badge/featured-light.svg" alt="Featured" /&gt;&lt;/a&gt;
               </code>
             </div>
             <div className="bg-gray-800 p-4 rounded-md border border-blue-700">
               <p className="text-sm font-medium mb-2 text-white">Dark Theme:</p>
               <img src="/badge/featured-dark.svg" alt="Dark badge" className="mb-2 h-12" />
               <code className="text-xs block break-all text-gray-300">
-                &lt;a href="https://qoo.im"&gt;&lt;img src="/badge/featured-dark.svg" alt="Featured" /&gt;&lt;/a&gt;
+                &lt;a href="https://hicyou.com"&gt;&lt;img src="https://hicyou.com/badge/featured-dark.svg" alt="Featured" /&gt;&lt;/a&gt;
               </code>
             </div>
           </div>
