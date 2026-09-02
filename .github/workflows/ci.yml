@@ -41,6 +41,11 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+      - name: Scan source for secrets
+        run: >-
+          docker run --rm --volume "$PWD:/repo:ro"
+          zricethezav/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          dir --redact --no-banner /repo
       - name: Install Bun
         run: npm install --global --no-audit --no-fund bun@1.4.0
       - name: Install dependencies
