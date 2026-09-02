@@ -15,7 +15,15 @@ export class UrlValidationError extends Error {
   }
 }
 
-type HostAddress = { address: string };
+export type HostAddress = { address: string; family?: number };
+
+export type ResolvedPublicUrl = {
+  url: URL;
+  addresses: readonly {
+    address: string;
+    family: 4 | 6;
+  }[];
+};
 
 export type HostAddressResolver = (
   hostname: string,
@@ -164,16 +172,14 @@ async function resolveHost(hostname: string): Promise<readonly HostAddress[]> {
 }
 
 /**
- * Validates a URL immediately before a server-side fetch. Every DNS answer
- * must be public: accepting one public record alongside an internal record
- * leaves address selection to the HTTP client and re-opens SSRF. This is a
- * request-layer control; production should also restrict outbound access to
- * private networks to defend against connection-time DNS rebinding.
+ * Resolves and validates every address for a server-side HTTP request. The
+ * returned addresses are the only addresses the transport may connect to;
+ * resolving the hostname again would re-open a DNS-rebinding race.
  */
-export async function validateUrlForFetch(
+export async function resolveUrlForFetch(
   rawUrl: unknown,
   resolver: HostAddressResolver = resolveHost,
-): Promise<URL> {
+): Promise<ResolvedPublicUrl> {
   const url = new URL(normalizeHttpUrl(rawUrl));
   if (url.port) {
     throw new UrlValidationError(
@@ -188,7 +194,10 @@ export async function validateUrlForFetch(
         "Requests to private or non-public networks are not allowed",
       );
     }
-    return url;
+    return {
+      url,
+      addresses: [{ address: hostname, family: isIP(hostname) as 4 | 6 }],
+    };
   }
 
   let addresses: readonly HostAddress[];
@@ -198,14 +207,39 @@ export async function validateUrlForFetch(
     throw new UrlValidationError("URL host could not be resolved");
   }
 
+  const normalizedAddresses = addresses.map(({ address }) => ({
+    address: stripIpv6Brackets(address).toLowerCase(),
+    family: isIP(stripIpv6Brackets(address)) as 0 | 4 | 6,
+  }));
   if (
-    addresses.length === 0 ||
-    addresses.some((address) => isBlockedIp(address.address))
+    normalizedAddresses.length === 0 ||
+    normalizedAddresses.some(
+      ({ address, family }) => family === 0 || isBlockedIp(address),
+    )
   ) {
     throw new UrlValidationError(
       "Requests to private or non-public networks are not allowed",
     );
   }
 
-  return url;
+  const uniqueAddresses = new Map<string, { address: string; family: 4 | 6 }>();
+  for (const address of normalizedAddresses) {
+    uniqueAddresses.set(`${address.family}:${address.address}`, {
+      address: address.address,
+      family: address.family as 4 | 6,
+    });
+  }
+  return { url, addresses: [...uniqueAddresses.values()] };
+}
+
+/**
+ * Compatibility helper for validation-only call sites. Code that performs an
+ * HTTP request must use `fetchPublicHttpUrl`, which connects to the addresses
+ * returned by `resolveUrlForFetch` instead of resolving the hostname again.
+ */
+export async function validateUrlForFetch(
+  rawUrl: unknown,
+  resolver: HostAddressResolver = resolveHost,
+): Promise<URL> {
+  return (await resolveUrlForFetch(rawUrl, resolver)).url;
 }

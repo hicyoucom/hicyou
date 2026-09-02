@@ -3,6 +3,31 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 const isDevelopment = process.env.NODE_ENV === "development";
 
+function configuredHttpOrigin(value) {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ||
+      (isDevelopment && url.protocol === "http:")
+      ? url.origin
+      : "";
+  } catch {
+    return "";
+  }
+}
+
+const analyticsScriptSources = [
+  process.env.NEXT_PUBLIC_GA_ID ? "https://www.googletagmanager.com" : "",
+  configuredHttpOrigin(process.env.NEXT_PUBLIC_MATOMO_URL),
+].filter(Boolean);
+const analyticsConnectSources = [
+  process.env.NEXT_PUBLIC_GA_ID ? "https://www.google-analytics.com" : "",
+  process.env.NEXT_PUBLIC_GA_ID ? "https://analytics.google.com" : "",
+  process.env.NEXT_PUBLIC_GA_ID ? "https://region1.google-analytics.com" : "",
+  process.env.NEXT_PUBLIC_GA_ID ? "https://stats.g.doubleclick.net" : "",
+  configuredHttpOrigin(process.env.NEXT_PUBLIC_MATOMO_URL),
+].filter(Boolean);
+
 /** @type {import("next").NextConfig} */
 const nextConfig = {
   output: "standalone",
@@ -16,12 +41,13 @@ const nextConfig = {
   async headers() {
     const contentSecurityPolicy = [
       "default-src 'self'",
-      `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com https://cdn.jsdelivr.net`,
+      `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com https://cdn.jsdelivr.net ${analyticsScriptSources.join(" ")}`.trim(),
+      "script-src-attr 'none'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https:",
       "font-src 'self' data: https://cdn.jsdelivr.net",
       "frame-src https://challenges.cloudflare.com",
-      "connect-src 'self' https:",
+      `connect-src 'self' https://challenges.cloudflare.com ${analyticsConnectSources.join(" ")}`.trim(),
       "object-src 'none'",
       "frame-ancestors 'self'",
       "base-uri 'self'",
@@ -37,6 +63,10 @@ const nextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
@@ -45,6 +75,7 @@ const nextConfig = {
     ];
   },
   experimental: {
+    sri: { algorithm: "sha384" },
     reactDebugChannel: false,
     serverSourceMaps: false,
     turbopackSourceMaps: false,

@@ -1,5 +1,6 @@
 import { load } from "cheerio";
-import { parseHttpUrl, validateUrlForFetch } from "@/lib/url-validator";
+import { fetchPublicHttpUrl, type PublicHttpFetcher } from "@/lib/public-http";
+import { parseHttpUrl } from "@/lib/url-validator";
 
 const MAX_REDIRECTS = 3;
 const FETCH_TIMEOUT_MS = 10_000;
@@ -63,29 +64,26 @@ function resolveHttpAssetUrl(value: string, base: URL): string {
 }
 
 /**
- * Fetches HTML with a DNS/public-network validation directly before every
- * request, including redirect hops. Metadata URLs are user controlled, so
- * they are deliberately not added to Next's persistent fetch cache.
+ * Fetches HTML through an address-pinned public-network transport, including
+ * independent validation for every redirect hop. Metadata URLs are user
+ * controlled and are never added to Next's persistent fetch cache.
  */
 export async function safeFetchHtml(
   initial: URL,
+  fetchImpl: PublicHttpFetcher = fetchPublicHttpUrl,
 ): Promise<{ url: URL; html: string }> {
   let current = initial;
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    current = await validateUrlForFetch(current.toString());
-
     const abortController = new AbortController();
     const timeout = setTimeout(() => abortController.abort(), FETCH_TIMEOUT_MS);
     try {
-      const response = await fetch(current.toString(), {
+      const response = await fetchImpl(current, {
         headers: {
           "User-Agent":
             "Mozilla/5.0 (compatible; DirectoryBot/1.0; +https://hicyou.com)",
         },
-        redirect: "manual",
         signal: abortController.signal,
-        cache: "no-store",
       });
 
       if (response.status >= 300 && response.status < 400) {

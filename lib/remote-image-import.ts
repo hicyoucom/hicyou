@@ -5,6 +5,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { processImageToAvif } from "@/lib/image-processor";
 import { normalizePublicImageSource } from "@/lib/image-source";
 import { logger } from "@/lib/logger";
+import { fetchPublicHttpUrl, type PublicHttpFetcher } from "@/lib/public-http";
 import {
   getR2Path,
   getR2PublicUrl,
@@ -12,7 +13,7 @@ import {
   r2Client,
   r2Config,
 } from "@/lib/r2";
-import { validateUrlForFetch } from "@/lib/url-validator";
+import { parseHttpUrl } from "@/lib/url-validator";
 
 const MAX_REDIRECTS = 3;
 const MAX_REMOTE_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -62,19 +63,16 @@ async function readBoundedBody(response: Response): Promise<Buffer> {
 
 async function fetchRemoteImage(
   rawUrl: string,
-  fetchImpl: typeof fetch,
+  fetchImpl: PublicHttpFetcher,
 ): Promise<Buffer> {
-  let current = await validateUrlForFetch(rawUrl);
+  let current = parseHttpUrl(rawUrl);
 
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-    current = await validateUrlForFetch(current.toString());
     const response = await fetchImpl(current, {
-      cache: "no-store",
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; HiCyouImageBot/1.0; +https://hicyou.com)",
       },
-      redirect: "manual",
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
@@ -111,7 +109,7 @@ async function fetchRemoteImage(
 export async function importRemoteImage(
   rawUrl: string,
   type: ImageType,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: PublicHttpFetcher = fetchPublicHttpUrl,
 ): Promise<string> {
   const publicFallback = normalizePublicImageSource(rawUrl) ?? "";
   if (!rawUrl || !isR2Configured || !r2Client || !r2Config.publicUrl) {

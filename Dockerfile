@@ -1,4 +1,6 @@
-FROM node:22-alpine AS base
+# Digest pins are intentionally paired with readable tags. Update the digest
+# only after CI and the container vulnerability scan pass for the new image.
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS base
 ARG BUN_VERSION=1.4.0
 RUN apk add --no-cache libc6-compat \
   && npm install --global --no-audit --no-fund "bun@${BUN_VERSION}"
@@ -15,11 +17,11 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 RUN bun run build
 
-FROM node:22-alpine AS migration-dependencies
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS migration-dependencies
 WORKDIR /migrate
 RUN npm install --omit=dev --no-package-lock drizzle-orm@0.45.2 postgres@3.4.9
 
-FROM node:22-alpine AS runner
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \

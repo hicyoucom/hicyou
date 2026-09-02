@@ -10,6 +10,7 @@ import { db } from "@/db/client";
 import { webhooks, webhookDeliveries, type Webhook } from "@/db/schema";
 import { listChanges, type ChangeEntry } from "@/lib/data/products";
 import { decryptSecret } from "@/lib/webhook-crypto";
+import { fetchPublicHttpUrl } from "@/lib/public-http";
 import {
   isBlockedIp,
   parseHttpUrl,
@@ -76,9 +77,9 @@ export function isBlockedWebhookHost(raw: string): boolean {
 }
 
 /**
- * Resolves every hostname immediately before delivery and rejects the URL if
- * any answer is private, reserved, or otherwise non-public. Deployments should
- * still deny private-network egress to cover connection-time DNS rebinding.
+ * Resolves every hostname and rejects the URL if any answer is private,
+ * reserved, or otherwise non-public. Delivery uses `fetchPublicHttpUrl` so the
+ * actual socket is pinned to a separately validated public address.
  */
 export async function validateWebhookUrl(
   raw: string,
@@ -131,10 +132,11 @@ async function postBatch(wh: Webhook, events: ChangeEntry[]): Promise<void> {
   try {
     // Inside try so a decrypt/key-config failure also records a delivery row.
     const signature = signPayload(decryptSecret(wh.secret), body, timestamp);
-    const destination = await validateWebhookUrl(wh.url);
-    const res = await fetch(destination, {
+    if (isBlockedWebhookHost(wh.url)) {
+      throw new Error("blocked host (SSRF guard)");
+    }
+    const res = await fetchPublicHttpUrl(wh.url, {
       method: "POST",
-      redirect: "manual", // never follow redirects — defeats the SSRF host check
       headers: {
         "Content-Type": "application/json",
         "User-Agent": "hicyou-webhooks/1.0",
@@ -146,6 +148,7 @@ async function postBatch(wh: Webhook, events: ChangeEntry[]): Promise<void> {
       signal: ctrl.signal,
     });
     httpStatus = res.status;
+    await res.body?.cancel();
     if (!res.ok) throw new Error(`HTTP ${res.status}`); // 3xx (manual redirect) also fails here
     await recordDelivery(wh.id, events.length, "success", httpStatus, null);
   } catch (err) {

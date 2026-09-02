@@ -3,6 +3,7 @@ import {
   isBlockedIp,
   normalizeHttpUrl,
   parseHttpUrl,
+  resolveUrlForFetch,
   UrlValidationError,
   validateUrlForFetch,
 } from "@/lib/url-validator";
@@ -84,6 +85,22 @@ describe("submission URL validation", () => {
         throw new Error("non-default ports must be rejected before DNS");
       }),
     ).rejects.toThrow(UrlValidationError);
+  });
+
+  test("returns the exact public addresses that the HTTP transport must pin", async () => {
+    const target = await resolveUrlForFetch(
+      "https://rebind.example/path",
+      async () => [
+        { address: "93.184.216.34", family: 4 },
+        { address: "2606:4700:4700::1111", family: 6 },
+      ],
+    );
+
+    expect(target.url.toString()).toBe("https://rebind.example/path");
+    expect(target.addresses).toEqual([
+      { address: "93.184.216.34", family: 4 },
+      { address: "2606:4700:4700::1111", family: 6 },
+    ]);
   });
 
   test("rejects encoded and literal loopback URLs before any DNS lookup", async () => {

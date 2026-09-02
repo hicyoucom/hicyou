@@ -17,11 +17,26 @@ const HTML = `<!doctype html>
   </body>
 </html>`;
 
+const DOCS_CONTENT_SECURITY_POLICY = [
+  "default-src 'none'",
+  "script-src https://cdn.jsdelivr.net",
+  "script-src-attr 'none'",
+  "style-src 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  "font-src data: https://cdn.jsdelivr.net",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 export function GET() {
   return new Response(HTML, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "public, max-age=3600",
+      "Content-Security-Policy": DOCS_CONTENT_SECURITY_POLICY,
     },
   });
 }

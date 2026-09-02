@@ -23,6 +23,8 @@ bun run start
 
 The provided container performs strict migrations before starting the server. Keep the application behind a reverse proxy that validates host headers, limits request size, applies timeouts, and overwrites any client IP header configured in `BETTER_AUTH_IP_ADDRESS_HEADERS`.
 
+The application pins user-controlled outbound HTTP requests to DNS answers that have passed its public-address checks. Keep a second, independent network control in production: deny application egress to loopback, RFC 1918, carrier-grade NAT, link-local, multicast, IPv6 ULA/link-local, and cloud metadata ranges. Allow only the explicitly required internal services, such as the configured PostgreSQL host. This limits the impact of future request-layer regressions and must be enforced by the hosting firewall, container network policy, or egress proxy rather than application environment variables.
+
 ## Docker Compose
 
 ```bash
@@ -31,6 +33,10 @@ docker compose up --build
 ```
 
 The example compose file starts a local PostgreSQL service. Replace its demonstration credentials for any non-local deployment and keep the database port private.
+
+The Compose file is intended for local evaluation and does not implement a production egress firewall. Apply the network policy described above before exposing a self-hosted instance to untrusted submissions or webhook destinations.
+
+The Node and PostgreSQL image tags are paired with reviewed manifest digests. When upgrading an image, update both the readable tag and digest, rebuild, and rerun the complete CI/container scan before deployment.
 
 ## Optional services
 
