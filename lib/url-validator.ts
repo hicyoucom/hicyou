@@ -127,10 +127,16 @@ function isBlockedIpv4(ip: string): boolean {
 }
 
 function isBlockedIpv6(ip: string): boolean {
-  const hextets = ip.split(":").filter(Boolean);
-  const firstHextet = hextets[0] ?? "0";
-  const firstHextetNumber = Number.parseInt(firstHextet, 16);
-  const secondHextetNumber = Number.parseInt(hextets[1] ?? "", 16);
+  // `isIP` has already validated the address. Preserve an empty second
+  // segment here: in a compressed address such as 2001::1 it represents
+  // zero, not the later `1` segment. Filtering empty strings would shift the
+  // prefix and let reserved 2001::/23 addresses bypass the policy.
+  const hextets = ip.split(":");
+  const firstHextetNumber = Number.parseInt(hextets[0] ?? "0", 16);
+  const secondHextetNumber =
+    hextets[1] === "" || hextets[1] === undefined
+      ? 0
+      : Number.parseInt(hextets[1], 16);
 
   // Publicly routable global-unicast IPv6 currently lives in 2000::/3. A
   // conservative allowlist blocks loopback, unspecified, link-local, ULA,
@@ -139,12 +145,16 @@ function isBlockedIpv6(ip: string): boolean {
     !Number.isFinite(firstHextetNumber) ||
     firstHextetNumber < 0x2000 ||
     firstHextetNumber > 0x3fff ||
-    // 2001:0::/32 (Teredo) and 2002::/16 (6to4) tunnel IPv6 over IPv4.
-    // Rejecting them prevents alternate encodings from bypassing IPv4 policy.
-    (firstHextetNumber === 0x2001 && secondHextetNumber === 0x0000) ||
+    // 2001::/23 is reserved for IETF protocol assignments (including Teredo,
+    // benchmarking and transition mechanisms), while 2002::/16 is 6to4.
+    // Neither range is an appropriate destination for application fetches.
+    (firstHextetNumber === 0x2001 && secondHextetNumber <= 0x01ff) ||
     firstHextetNumber === 0x2002 ||
     // 2001:db8::/32 is reserved for documentation and never publicly routed.
-    (firstHextetNumber === 0x2001 && secondHextetNumber === 0x0db8)
+    (firstHextetNumber === 0x2001 && secondHextetNumber === 0x0db8) ||
+    // The upper 3f00::/8 portion of 2000::/3 is IANA-reserved, including the
+    // current 3fff::/20 documentation prefix.
+    firstHextetNumber >= 0x3f00
   );
 }
 

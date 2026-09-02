@@ -17,6 +17,7 @@ import { ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
 import type { Faq, KeyFeature } from "@/db/schema";
+import { getSafeExternalHref } from "@/lib/link-utils";
 
 interface Submission {
     id: number;
@@ -130,15 +131,19 @@ export function SubmissionDetailDialog({
                         {submission.title}
                     </DialogTitle>
                     <DialogDescription>
-                        <a
-                            href={submission.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                            {submission.url}
-                            <ExternalLink className="h-3 w-3" />
-                        </a>
+                        {getSafeExternalHref(submission.url) ? (
+                            <a
+                                href={getSafeExternalHref(submission.url)!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center gap-1"
+                            >
+                                {submission.url}
+                                <ExternalLink className="h-3 w-3" />
+                            </a>
+                        ) : (
+                            <span className="text-destructive">Invalid stored URL</span>
+                        )}
                     </DialogDescription>
                 </DialogHeader>
 

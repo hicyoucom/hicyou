@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-preview-security-20260903",
+  "exportId": "v2-preview-security-20260903-r2",
   "files": [
     {
       "path": ".dockerignore",
@@ -139,7 +139,7 @@
     },
     {
       "path": "app/[locale]/hi-studio/manage/page.tsx",
-      "sha256": "044959651cf0bbec44509e179af78d2b531eecbabfa94e4c17874a7b5335f4bc",
+      "sha256": "8f6a4d53fbf23136219133444ed3f4ad1239b11dd6d0508da7f23e59d1279fb2",
       "ownership": "generated"
     },
     {
@@ -149,12 +149,12 @@
     },
     {
       "path": "app/[locale]/hi-studio/quality/page.tsx",
-      "sha256": "1d24110e36b9074dbe02523a522e4c95202d4a3417b93afda276ca241cfd2dfc",
+      "sha256": "4ee669766225c142425cac66f3de6873d22907c7956ebf164d176a24ecf03958",
       "ownership": "generated"
     },
     {
       "path": "app/[locale]/hi-studio/submissions/page.tsx",
-      "sha256": "4637534c2ad25cd3281728a4f16ae85acb4b552722225bdf45b1e98cbb0a67bb",
+      "sha256": "8bf52874a34b4007d11bff7c9d463252f33a236e1709e81ac1c8d7e596f0b9b6",
       "ownership": "generated"
     },
     {
@@ -644,7 +644,7 @@
     },
     {
       "path": "components/admin/submission-detail-dialog.tsx",
-      "sha256": "59733aa8354e9850da6b8d292ef2a510b9afb6708b00aee8192032f121dcd7fb",
+      "sha256": "b475b28e28fd5e6e57243b77cf7a8d6bd643aa7b38b7b4e48bd4a08d37aa4dd3",
       "ownership": "generated"
     },
     {
@@ -1123,6 +1123,11 @@
       "ownership": "generated"
     },
     {
+      "path": "lib/__tests__/link-utils.test.ts",
+      "sha256": "03d5ed0a0f787ec4248e21fdc79d6537bc508a6a8921029ae18b10d02015e05d",
+      "ownership": "generated"
+    },
+    {
       "path": "lib/__tests__/llm.test.ts",
       "sha256": "1997a025ff5787d1076a881d20e4c2ae361906a908b256df8fcd4d127578b5c4",
       "ownership": "generated"
@@ -1209,7 +1214,7 @@
     },
     {
       "path": "lib/__tests__/url-validator.test.ts",
-      "sha256": "708c9439e14a59e3de6aa3895cc6899b4f7b63bfd6486c089ce62b35c7b7c50b",
+      "sha256": "2cb81703b99b2f449b72baf22ff7c88c281123e89f15aac665f84794f1e04c9e",
       "ownership": "generated"
     },
     {
@@ -1454,7 +1459,7 @@
     },
     {
       "path": "lib/link-utils.ts",
-      "sha256": "f4b9274dbc4a68fa477b083eb22fca0e366948fe70924cdfb7c2d99e38c37abe",
+      "sha256": "b202fb4af9220852e846fc636bd1770896b27949b2afe34d2e6d3acdae368e3b",
       "ownership": "generated"
     },
     {
@@ -1584,7 +1589,7 @@
     },
     {
       "path": "lib/url-validator.ts",
-      "sha256": "f31d4ec9ab40c9e1cc11a1957fc6124a595594681f5a073abbbb180154ed3c91",
+      "sha256": "9bde006cfd1a44665999ec220c5cca0fafa2a3f351a080c03896339a1e3ea64d",
       "ownership": "generated"
     },
     {

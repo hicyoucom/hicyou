@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import AdminHeader from "@/components/admin/admin-header";
 import Link from "next/link";
+import { getSafeExternalHref } from "@/lib/link-utils";
 
 interface Bookmark {
   id: number;
@@ -555,14 +556,20 @@ function ManageBookmarksContent() {
                       </span>
                     )}
                   </div>
-                  <a
-                    href={bookmark.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="break-all text-blue-500 hover:underline"
-                  >
-                    {bookmark.url}
-                  </a>
+                  {getSafeExternalHref(bookmark.url) ? (
+                    <a
+                      href={getSafeExternalHref(bookmark.url)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="break-all text-blue-500 hover:underline"
+                    >
+                      {bookmark.url}
+                    </a>
+                  ) : (
+                    <span className="text-sm text-destructive">
+                      Invalid stored URL
+                    </span>
+                  )}
                   {bookmark.description && (
                     <p className="mt-2 text-gray-600">{bookmark.description}</p>
                   )}

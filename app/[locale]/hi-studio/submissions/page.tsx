@@ -28,6 +28,7 @@ import Image from "next/image";
 import { SubmissionDetailDialog } from "@/components/admin/submission-detail-dialog";
 import type { BadgeProps } from "@/components/ui/badge";
 import type { Faq, KeyFeature } from "@/db/schema";
+import { getSafeExternalHref } from "@/lib/link-utils";
 
 interface Submission {
   id: number;
@@ -361,15 +362,21 @@ export default function SubmissionsPage() {
                                   >
                                     {submission.title}
                                   </Link>
-                                  <a
-                                    href={submission.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-                                  >
-                                    {submission.url}
-                                    <ExternalLink className="h-3 w-3" />
-                                  </a>
+                                  {getSafeExternalHref(submission.url) ? (
+                                    <a
+                                      href={getSafeExternalHref(submission.url)!}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                                    >
+                                      {submission.url}
+                                      <ExternalLink className="h-3 w-3" />
+                                    </a>
+                                  ) : (
+                                    <span className="text-sm text-destructive">
+                                      Invalid stored URL
+                                    </span>
+                                  )}
                                   {submission.tagline && (
                                     <div className="text-sm text-muted-foreground">
                                       {submission.tagline}

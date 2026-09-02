@@ -50,7 +50,10 @@ describe("submission URL validation", () => {
       "fe80::1",
       "2001:db8::1",
       "2001:0000::1",
+      "2001::1",
+      "2001:2::1",
       "2002:c000:0204::1",
+      "3fff::1",
       "::ffff:127.0.0.1",
     ]) {
       expect(isBlockedIp(ip)).toBe(true);

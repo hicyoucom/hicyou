@@ -31,7 +31,7 @@ import {
   BOOKMARK_QUALITY_RULES,
 } from "@/lib/bookmark-quality";
 import { getBookmarkQualityReport } from "@/lib/data/bookmark-quality";
-import { parseHttpUrl } from "@/lib/url-validator";
+import { getSafeExternalHref } from "@/lib/link-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -54,17 +54,6 @@ function formatDate(value: Date | null): string {
   return new Intl.DateTimeFormat("en-US", {
     dateStyle: "medium",
   }).format(value);
-}
-
-// Older records may predate the current write-side URL validation. Rendering
-// an untrusted `javascript:` or malformed value as a clickable admin link
-// would create a stored-XSS footgun, so validate without performing network I/O.
-function getSafeExternalHref(value: string): string | null {
-  try {
-    return parseHttpUrl(value).toString();
-  } catch {
-    return null;
-  }
 }
 
 export default async function BookmarkQualityPage() {
