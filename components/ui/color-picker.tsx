@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Check } from "lucide-react";
@@ -55,25 +55,13 @@ export function ColorPicker({
   id,
   defaultValue,
 }: ColorPickerProps) {
-  const [selectedColor, setSelectedColor] = useState(value || defaultValue || PRESET_COLORS[0]);
-  const hiddenInputRef = useRef<HTMLInputElement>(null);
-
-  // Sync hidden input value
-  useEffect(() => {
-    if (hiddenInputRef.current) {
-      hiddenInputRef.current.value = selectedColor;
-    }
-  }, [selectedColor]);
-
-  // Update when value prop changes
-  useEffect(() => {
-    if (value && value !== selectedColor) {
-      setSelectedColor(value);
-    }
-  }, [value]);
+  const [internalColor, setInternalColor] = useState(
+    defaultValue || PRESET_COLORS[0],
+  );
+  const selectedColor = value || internalColor;
 
   const handleColorSelect = (color: string) => {
-    setSelectedColor(color);
+    setInternalColor(color);
     onValueChange(color);
   };
 
@@ -122,7 +110,6 @@ export function ColorPicker({
       {/* Hidden input for form submission */}
       <input
         type="hidden"
-        ref={hiddenInputRef}
         name={name}
         id={id}
         value={selectedColor}
@@ -130,5 +117,4 @@ export function ColorPicker({
     </div>
   );
 }
-
 

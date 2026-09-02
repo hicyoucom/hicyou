@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import type { Faq, KeyFeature } from "@/db/schema";
 
 interface Submission {
     id: number;
@@ -25,21 +26,22 @@ interface Submission {
     description: string | null;
     whyStartups: string | null;
     alternatives: string | null;
-    pricingType: string;
+
     logo: string | null;
     cover: string | null;
     categoryId: number | null;
+    categories: Array<{ id: number; name: string; slug: string; primary: boolean }>;
     submitterEmail: string | null;
     submitterName: string | null;
     status: string;
     isDofollow: boolean;
     hasBadge: boolean;
     badgeVerified: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    keyFeatures: any;
-    useCases: any;
-    faqs: any;
+    createdAt: string;
+    updatedAt: string;
+    keyFeatures: KeyFeature[] | null;
+    useCases: string[] | null;
+    faqs: Faq[] | null;
 }
 
 interface SubmissionDetailDialogProps {
@@ -79,7 +81,7 @@ export function SubmissionDetailDialog({
             } else {
                 toast.error("Failed to approve submission");
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to approve submission");
         } finally {
             setLoading(false);
@@ -104,7 +106,7 @@ export function SubmissionDetailDialog({
             } else {
                 toast.error("Failed to reject submission");
             }
-        } catch (error) {
+        } catch {
             toast.error("Failed to reject submission");
         } finally {
             setLoading(false);
@@ -164,10 +166,23 @@ export function SubmissionDetailDialog({
                                 </Badge>
                             </div>
                         </div>
+
                         <div>
-                            <Label className="text-muted-foreground">Pricing</Label>
-                            <div className="mt-1 font-medium">{submission.pricingType}</div>
+                            <Label className="text-muted-foreground">Categories</Label>
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                                {submission.categories.length > 0
+                                    ? submission.categories.map((category) => (
+                                        <Badge
+                                            key={category.id}
+                                            variant={category.primary ? "default" : "secondary"}
+                                        >
+                                            {category.name}
+                                        </Badge>
+                                    ))
+                                    : <span className="text-sm text-muted-foreground">Uncategorized</span>}
+                            </div>
                         </div>
+
                     </div>
 
                     {/* Tagline */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Pagination } from "@/components/ui/pagination";
 
 interface CategoryPaginationProps {
@@ -15,18 +15,12 @@ export function CategoryPagination({
     basePath,
 }: CategoryPaginationProps) {
     const router = useRouter();
-    // const pathname = usePathname(); // No longer needed
-    // const searchParams = useSearchParams(); // No longer needed
+    const searchParams = useSearchParams();
 
     const onPageChange = (page: number) => {
-        // const params = new URLSearchParams(searchParams); // No longer needed
-        // params.set("page", page.toString()); // No longer needed
-        // router.push(`${pathname}?${params.toString()}`); // No longer needed
-        if (page === 1) {
-            router.push(basePath);
-        } else {
-            router.push(`${basePath}/${page}`);
-        }
+        const path = page === 1 ? basePath : `${basePath}/${page}`;
+        const query = searchParams.toString();
+        router.push(query ? `${path}?${query}` : path);
     };
 
     return (

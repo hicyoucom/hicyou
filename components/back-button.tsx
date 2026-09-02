@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 
 export const BackButton = () => {
   const router = useRouter();
+  const t = useTranslations("common");
 
   return (
     <Button
@@ -12,7 +14,7 @@ export const BackButton = () => {
       onClick={() => router.back()}
       className="not-prose"
     >
-      Go Back
+      {t("back")}
     </Button>
   );
 };

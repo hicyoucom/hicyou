@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { S3Client } from "@aws-sdk/client-s3";
 
 // Validate environment variables
@@ -11,7 +12,7 @@ const requiredEnvVars = [
 function validateR2Config(): boolean {
   for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
-      console.warn(`Warning: ${envVar} is not set. R2 upload will not work.`);
+      logger.warn(`Warning: ${envVar} is not set. R2 upload will not work.`);
       return false;
     }
   }

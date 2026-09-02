@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import type { ActionState } from "@/lib/actions";
+import type { ActionState, ScrapedUrlData } from "@/lib/actions";
 
 export function URLScraper() {
   const [url, setUrl] = useState("");
-  const [metadata, setMetadata] = useState<ActionState | null>(null);
+  const [metadata, setMetadata] = useState<ActionState<ScrapedUrlData> | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,11 +22,7 @@ export function URLScraper() {
     }
 
     try {
-      const formData = new FormData();
-      formData.append("url", url);
-
-      //@ts-ignore SOS CAMERON
-      const response = await scrapeUrl(null, formData);
+      const response = await scrapeUrl(null, { url });
       if (response?.data) {
         setMetadata(response);
         toast.success("Successfully fetched metadata");
@@ -70,7 +66,7 @@ export function URLScraper() {
 
         {metadata && (
           <ResultDisplay
-            metadata={metadata.data}
+            metadata={metadata.data ?? null}
             error={metadata.error || null}
           />
         )}

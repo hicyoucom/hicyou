@@ -2,20 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
 
 export default function AdminHeader() {
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("/api/hi-studio/logout", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        router.push("/hi-studio/login");
-        router.refresh();
-      }
+      await authClient.signOut();
+      router.push("/login");
+      router.refresh();
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -37,6 +33,12 @@ export default function AdminHeader() {
               className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
             >
               Manage Bookmarks
+            </Link>
+            <Link
+              href="/hi-studio/category-enrichment"
+              className="rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              Category Enrichment
             </Link>
           </nav>
           <button

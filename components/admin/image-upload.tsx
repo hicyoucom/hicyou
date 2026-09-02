@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, X, Loader2, Image as ImageIcon, Check } from "lucide-react";
+import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface ImageUploadProps {
@@ -15,7 +15,6 @@ interface ImageUploadProps {
   placeholder?: string;
   description?: string;
   disabled?: boolean;
-  turnstileToken?: string | null;
 }
 
 export function ImageUpload({
@@ -26,7 +25,6 @@ export function ImageUpload({
   placeholder,
   description,
   disabled = false,
-  turnstileToken,
 }: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
@@ -38,9 +36,9 @@ export function ImageUpload({
     if (!file) return;
 
     // Validate file type
-    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif"];
+    const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"];
     if (!validTypes.includes(file.type)) {
-      toast.error("Invalid file type. Please upload JPG, PNG, WebP, or AVIF");
+      toast.error("Invalid file type. Please upload JPG, PNG, WebP, or GIF");
       return;
     }
 
@@ -66,11 +64,6 @@ export function ImageUpload({
       const formData = new FormData();
       formData.append("file", file);
       formData.append("type", type);
-
-      // Add turnstile token if provided (for public submissions)
-      if (turnstileToken) {
-        formData.append("turnstileToken", turnstileToken);
-      }
 
       setUploadProgress("Processing image...");
 
@@ -142,6 +135,8 @@ export function ImageUpload({
       {preview && (
         <div className="relative rounded-lg border p-2 bg-muted/50">
           <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
+            {/* Preview URLs may come from arbitrary HTTPS publisher hosts. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview}
               alt="Preview"
@@ -176,7 +171,7 @@ export function ImageUpload({
         <Input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/jpg,image/png,image/webp,image/avif"
+          accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
           onChange={handleFileSelect}
           disabled={disabled}
           className="hidden"
@@ -201,11 +196,10 @@ export function ImageUpload({
       <div className="flex items-start gap-2 text-xs text-muted-foreground">
         <ImageIcon className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
         <div>
-          <p>Supported: JPG, PNG, WebP, AVIF • Max 1MB</p>
+          <p>Supported: JPG, PNG, WebP, GIF • Max 1MB</p>
           <p>Images will be optimized for web performance</p>
         </div>
       </div>
     </div>
   );
 }
-

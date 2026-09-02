@@ -89,6 +89,7 @@ export const CategoryFilter = ({ categories }: CategoryFilterProps) => {
     <div className="my-12 flex items-center justify-between space-y-2">
       <div className="flex items-center gap-2">
         <SearchInput
+          key={searchParams.get("search") ?? ""}
           defaultValue={searchParams.get("search") ?? ""}
           onChange={handleSearch}
           isPending={isPending}

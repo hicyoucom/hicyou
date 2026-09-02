@@ -1,5 +1,10 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyBadge } from "@/lib/badge-verify";
+import { getClientIp, checkActionRateLimit } from "@/lib/rate-limit";
+
+const MAX_VERIFICATIONS_PER_HOUR = 20;
+const VERIFICATION_WINDOW_MS = 60 * 60 * 1000;
 
 /**
  * POST /api/verify-badge
@@ -7,6 +12,23 @@ import { verifyBadge } from "@/lib/badge-verify";
  */
 export async function POST(request: NextRequest) {
   try {
+    // Public endpoint that makes the server fetch arbitrary URLs — cap abuse
+    // per client IP (the submit form only needs a handful of attempts).
+    const clientIp = getClientIp(request);
+    const rl = await checkActionRateLimit("verify-badge", clientIp, MAX_VERIFICATIONS_PER_HOUR, VERIFICATION_WINDOW_MS);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        {
+          error: `Too many requests. Maximum ${MAX_VERIFICATIONS_PER_HOUR} badge verifications per hour. Please try again later.`,
+          verified: false,
+          // The submit form reads `message` on failure — without it, a 429
+          // would display as "badge not found", which is misleading.
+          message: "Too many verification attempts. Please try again in an hour.",
+        },
+        { status: 429, headers: { "Retry-After": "3600" } }
+      );
+    }
+
     const body = await request.json();
     const { url } = body;
 
@@ -34,7 +56,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         verified: true,
-        message: "Badge verified successfully! Your link will be dofollow + ugc.",
+        message: "Badge verified successfully! This submission is eligible for a Dofollow link if it is published.",
       });
     } else {
       return NextResponse.json({
@@ -44,7 +66,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error("Error verifying badge:", error);
+    logger.error("Error verifying badge:", error);
     return NextResponse.json(
       { 
         error: "Failed to verify badge",
@@ -55,4 +77,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

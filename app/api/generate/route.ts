@@ -1,8 +1,15 @@
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { isAIConfigured, generateWebsiteContent } from "@/lib/ai-config";
+import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireAdmin();
+    if (!auth.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: auth.status });
+    }
+
     const { url, title, metaDescription, searchResults } = await request.json();
 
     if (!url) {
@@ -11,6 +18,14 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    logAdminAction({
+      actorEmail: auth.email,
+      action: "ai.generate_content",
+      request,
+      status: 200,
+      metadata: { url },
+    });
 
     // Check if AI is configured
     if (!isAIConfigured()) {
@@ -33,7 +48,7 @@ export async function POST(request: Request) {
           : searchResults;
         parsedResults = JSON.stringify(results, null, 2);
       } catch (error) {
-        console.warn("Failed to parse search results:", error);
+        logger.warn("Failed to parse search results:", error);
         parsedResults = searchResults;
       }
     }
@@ -56,10 +71,9 @@ export async function POST(request: Request) {
       overview: content.description,
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Error generating content:", errorMessage);
+    logger.error("Error generating content:", error);
     return NextResponse.json(
-      { error: `Failed to generate content: ${errorMessage}` },
+      { error: "Failed to generate content" },
       { status: 500 },
     );
   }

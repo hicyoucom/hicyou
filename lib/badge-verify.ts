@@ -3,10 +3,10 @@
  * Checks if a website contains the Hi Cyou badge
  */
 
-const BADGE_PATHS = [
-  "/badge/featured-light.svg",
-  "/badge/featured-dark.svg",
-];
+import { parseHttpUrl } from "@/lib/url-validator";
+import { safeFetchHtml } from "@/lib/fetch-metadata";
+
+const BADGE_PATHS = ["/badge/featured-light.svg", "/badge/featured-dark.svg"];
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hicyou.com";
 
@@ -17,28 +17,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hicyou.com";
  */
 export async function verifyBadge(targetUrl: string): Promise<boolean> {
   try {
-    // Normalize URL
-    const url = targetUrl.startsWith("http") ? targetUrl : `https://${targetUrl}`;
-
-    // Fetch the HTML content with timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "HiCyou Badge Verifier/1.0",
-      },
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      console.log(`Failed to fetch ${url}: ${response.status}`);
-      return false;
-    }
-
-    const html = await response.text();
+    // safeFetchHtml enforces manual redirects (re-validated each hop),
+    // 10s timeout, and a 2MB response cap.
+    const { html } = await safeFetchHtml(parseHttpUrl(targetUrl));
     const htmlLower = html.toLowerCase();
 
     // Check for badge image references
@@ -54,36 +35,29 @@ export async function verifyBadge(targetUrl: string): Promise<boolean> {
     });
 
     if (!hasBadgeImage) {
-      console.log(`Badge image not found in ${url}`);
       return false;
     }
 
     // Also check if the badge links back to our site
     // Allow SITE_URL and any subpaths
     const siteUrlObj = new URL(SITE_URL);
-    const hostname = siteUrlObj.hostname.replace(/^www\./, '');
+    const hostname = siteUrlObj.hostname.replace(/^www\./, "");
     // Escape dots for regex
-    const escapedHostname = hostname.replace(/\./g, '\\.');
+    const escapedHostname = hostname.replace(/\./g, "\\.");
 
     // Pattern matches: https://(www.)?hostname(/.*)?
-    const siteLinkPattern = new RegExp(`href=["']https:\\/\\/(www\\.)?${escapedHostname}(\\/.*)?["']`, 'i');
+    const siteLinkPattern = new RegExp(
+      `href=["']https:\\/\\/(www\\.)?${escapedHostname}(\\/.*)?["']`,
+      "i",
+    );
     const hasSiteLink = siteLinkPattern.test(html);
 
     if (!hasSiteLink) {
-      console.log(`Site link not found in ${url}`);
       return false;
     }
 
-    console.log(`✓ Badge verified on ${url}`);
     return true;
-  } catch (error) {
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        console.log(`Timeout verifying badge on ${targetUrl}`);
-      } else {
-        console.log(`Error verifying badge on ${targetUrl}:`, error.message);
-      }
-    }
+  } catch {
     return false;
   }
 }
@@ -91,7 +65,9 @@ export async function verifyBadge(targetUrl: string): Promise<boolean> {
 /**
  * Batch verify badges for multiple URLs
  */
-export async function batchVerifyBadges(urls: string[]): Promise<Map<string, boolean>> {
+export async function batchVerifyBadges(
+  urls: string[],
+): Promise<Map<string, boolean>> {
   const results = new Map<string, boolean>();
 
   for (const url of urls) {
@@ -103,4 +79,3 @@ export async function batchVerifyBadges(urls: string[]): Promise<Map<string, boo
 
   return results;
 }
-

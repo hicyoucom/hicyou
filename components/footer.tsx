@@ -1,196 +1,102 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { useTheme } from "next-themes";
-import { Github, ExternalLink, Crown, DollarSign, FileText } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, Github } from "lucide-react";
+import { useTranslations } from "next-intl";
+
 import { directory } from "@/directory.config";
+import type { FriendLink } from "@/lib/friend-links";
 import Logo from "@/public/logo.svg";
-import { useEffect, useState } from "react";
 
-export const Footer = () => {
-  const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const badgeSrc = mounted && resolvedTheme === "dark"
-    ? "/badge/powered-dark.svg"
-    : "/badge/powered-light.svg";
+export function Footer({ navSites = [] }: { navSites?: FriendLink[] }) {
+  const t = useTranslations("footer");
 
   return (
-    <footer className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mt-20">
-      <div className="max-w-[1400px] mx-auto px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-8">
-          {/* First Column - Brand */}
+    <footer className="mt-20 border-t bg-background/95 pb-24 backdrop-blur lg:pb-0">
+      <div className="mx-auto max-w-[1400px] px-8 py-12">
+        {navSites.length > 0 && (
+          <div className="mb-10 border-b pb-10">
+            <h3 className="mb-5 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              {t("navigationPartners")}
+            </h3>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {navSites.map((site) => (
+                <a
+                  key={site.id}
+                  href={site.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border bg-card px-3 py-1.5 text-sm font-medium hover:border-primary/50"
+                >
+                  {site.name}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           <div className="space-y-4">
             <Link href="/" className="inline-block">
               <Image
                 src={Logo}
-                alt="Logo"
+                alt={directory.name}
                 width={120}
                 height={50}
-                className="w-auto h-8"
+                className="h-8 w-auto"
               />
             </Link>
-
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>
-                © {new Date().getFullYear()} {directory.name}. All rights reserved.
-              </p>
-              <p>
-                Open source project by{" "}
-                <a
-                  href="https://github.com/hicyoucom/hicyou"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline transition-colors hover:text-foreground inline-flex items-center gap-1"
-                >
-                  HiCyou
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </p>
-            </div>
-
-            <Link
-              href="https://hicyou.com/open-source"
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} {directory.name}. {t("rights")}
+            </p>
+            <a
+              href="https://github.com/hicyoucom/hicyou"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-4"
+              className="inline-flex items-center gap-1 text-sm underline"
             >
-              <Image
-                src={badgeSrc}
-                alt="Powered by HiCyou"
-                width={150}
-                height={40}
-                className="w-auto h-10 transition-opacity hover:opacity-80"
-              />
-            </Link>
+              HiCyou on GitHub <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
 
-          {/* Second Column - Discover */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Discover</h3>
-            <ul className="space-y-3">
+            <h3 className="mb-4 font-semibold">{t("discover")}</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <Link
-                  href="/about"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  About
-                </Link>
+                <Link href="/about">{t("footerAbout")}</Link>
               </li>
               <li>
-                <Link
-                  href="/c"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Categories
-                </Link>
+                <Link href="/c">{t("footerCategories")}</Link>
               </li>
               <li>
-                <Link
-                  href="/submit"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Submit Project
-                </Link>
+                <Link href="/collections">{t("footerCollections")}</Link>
+              </li>
+              <li>
+                <Link href="/submit">{t("submitProject")}</Link>
               </li>
             </ul>
           </div>
 
-          {/* Third Column - Resources */}
           <div>
-            <h3 className="font-semibold text-foreground mb-4">Resources</h3>
-            <ul className="space-y-3">
+            <h3 className="mb-4 font-semibold">{t("resources")}</h3>
+            <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <Link
                   href="/open-source"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
+                  className="inline-flex items-center gap-2"
                 >
-                  <Github className="h-4 w-4" />
-                  Open Source
+                  <Github className="h-4 w-4" /> {t("footerOpenSource")}
                 </Link>
               </li>
               <li>
-                <Link
-                  href="/sponsors"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
-                >
-                  <Crown className="h-4 w-4" />
-                  Sponsors
-                </Link>
+                <Link href="/legal/terms">{t("terms")}</Link>
               </li>
               <li>
-                <Link
-                  href="/pricing"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
-                >
-                  <DollarSign className="h-4 w-4" />
-                  Pricing
-                </Link>
+                <Link href="/legal/privacy">{t("privacy")}</Link>
               </li>
               <li>
-                <Link
-                  href="/blog"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/backlink-database"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  SEO Backlink Database
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/hicyoucom/hicyou"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-2"
-                >
-                  <Github className="h-4 w-4" />
-                  GitHub Repo
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Fourth Column - Legal */}
-          <div>
-            <h3 className="font-semibold text-foreground mb-4">Legal</h3>
-            <ul className="space-y-3">
-              <li>
-                <Link
-                  href="/legal/terms"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/legal/privacy"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Privacy Policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/legal/badges"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Attribution Badges
-                </Link>
+                <Link href="/friends">{t("friends")}</Link>
               </li>
             </ul>
           </div>
@@ -198,5 +104,4 @@ export const Footer = () => {
       </div>
     </footer>
   );
-};
-
+}

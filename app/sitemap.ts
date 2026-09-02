@@ -1,89 +1,71 @@
-import { MetadataRoute } from "next";
-import { getAllBookmarks, getAllCategories } from "@/lib/data";
+import type { MetadataRoute } from "next";
+
 import { directory } from "@/directory.config";
+import { defaultLocale, locales } from "@/i18n/config";
+import {
+  getAllCategories,
+  getAllCollections,
+  getPublicBookmarkSitemapEntries,
+  getTagsWithCount,
+} from "@/lib/data";
+
+export const dynamic = "force-dynamic";
+
+function alternates(route: string) {
+  const languages = Object.fromEntries(
+    locales.map((locale) => [
+      locale,
+      `${directory.baseUrl}${locale === defaultLocale ? "" : `/${locale}`}${route}`,
+    ]),
+  );
+  languages["x-default"] = `${directory.baseUrl}${route}`;
+  return { languages };
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = directory.baseUrl;
-
-  // Fetch all bookmarks and categories
-  const [bookmarks, categories] = await Promise.all([
-    getAllBookmarks(),
+  const [bookmarks, categories, tags, collections] = await Promise.all([
+    getPublicBookmarkSitemapEntries(),
     getAllCategories(),
+    getTagsWithCount(),
+    getAllCollections(false),
   ]);
-
-  // Static pages
-  const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/c`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/about`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/pricing`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/submit`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/legal`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/legal/terms`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/legal/privacy`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/legal/badges`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
+  const staticRoutes = [
+    "/",
+    "/c",
+    "/tags",
+    "/collections",
+    "/about",
+    "/submit",
+    "/legal",
+    "/legal/terms",
+    "/legal/privacy",
+    "/legal/badges",
   ];
-
-  // Category pages
-  const categoryPages: MetadataRoute.Sitemap = categories.map((category) => ({
-    url: `${baseUrl}/c/${category.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "weekly",
-    priority: 0.8,
-  }));
-
-  // Dynamic pages from bookmarks
-  const bookmarkPages: MetadataRoute.Sitemap = bookmarks.map((bookmark) => ({
-    url: `${baseUrl}/${bookmark.slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly",
-    priority: 0.6,
-  }));
-
-  return [...staticPages, ...categoryPages, ...bookmarkPages];
+  return [
+    ...staticRoutes.map((route) => ({
+      url: `${directory.baseUrl}${route === "/" ? "" : route}`,
+      lastModified: new Date(),
+      alternates: alternates(route),
+    })),
+    ...categories.map((item) => ({
+      url: `${directory.baseUrl}/c/${item.slug}`,
+      lastModified: new Date(),
+      alternates: alternates(`/c/${item.slug}`),
+    })),
+    ...tags.map((item) => ({
+      url: `${directory.baseUrl}/tags/${item.slug}`,
+      lastModified: new Date(),
+      alternates: alternates(`/tags/${item.slug}`),
+    })),
+    ...collections.map((item) => ({
+      url: `${directory.baseUrl}/collections/${item.slug}`,
+      lastModified: new Date(),
+      alternates: alternates(`/collections/${item.slug}`),
+    })),
+    ...bookmarks.map((item) => ({
+      url: `${directory.baseUrl}/${item.slug}`,
+      lastModified: item.updatedAt,
+      alternates: alternates(`/${item.slug}`),
+    })),
+  ];
 }
