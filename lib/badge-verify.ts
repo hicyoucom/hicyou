@@ -3,12 +3,62 @@
  * Checks if a website contains the Hi Cyou badge
  */
 
-import { parseHttpUrl } from "@/lib/url-validator";
+import { load } from "cheerio";
+
 import { safeFetchHtml } from "@/lib/fetch-metadata";
+import { parseHttpUrl } from "@/lib/url-validator";
 
 const BADGE_PATHS = ["/badge/featured-light.svg", "/badge/featured-dark.svg"];
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://hicyou.com";
+
+function normalizedHostname(url: URL): string {
+  return url.hostname.toLowerCase().replace(/^www\./, "");
+}
+
+/**
+ * Require the badge image to be inside the backlink. Parsing the markup avoids
+ * dynamic regular expressions and prevents an unrelated image and link from
+ * satisfying two independent substring checks.
+ */
+export function containsLinkedBadge(
+  html: string,
+  pageUrl: URL,
+  siteUrl = new URL(SITE_URL),
+): boolean {
+  const $ = load(html);
+  const expectedHostname = normalizedHostname(siteUrl);
+
+  return $("a[href]")
+    .toArray()
+    .some((anchor) => {
+      let href: URL;
+      try {
+        href = new URL($(anchor).attr("href")!, pageUrl);
+      } catch {
+        return false;
+      }
+      if (
+        href.protocol !== siteUrl.protocol ||
+        normalizedHostname(href) !== expectedHostname ||
+        href.port !== siteUrl.port
+      ) {
+        return false;
+      }
+
+      return $(anchor)
+        .find("img[src]")
+        .toArray()
+        .some((image) => {
+          try {
+            const source = new URL($(image).attr("src")!, pageUrl);
+            return BADGE_PATHS.includes(source.pathname);
+          } catch {
+            return false;
+          }
+        });
+    });
+}
 
 /**
  * Verify if a website contains our badge
@@ -19,44 +69,8 @@ export async function verifyBadge(targetUrl: string): Promise<boolean> {
   try {
     // safeFetchHtml enforces manual redirects (re-validated each hop),
     // 10s timeout, and a 2MB response cap.
-    const { html } = await safeFetchHtml(parseHttpUrl(targetUrl));
-    const htmlLower = html.toLowerCase();
-
-    // Check for badge image references
-    const hasBadgeImage = BADGE_PATHS.some((path) => {
-      const imagePath = path.toLowerCase();
-      // Check various possible patterns
-      return (
-        htmlLower.includes(imagePath) ||
-        htmlLower.includes(`src="${imagePath}"`) ||
-        htmlLower.includes(`src='${imagePath}'`) ||
-        htmlLower.includes(`src=${imagePath}`)
-      );
-    });
-
-    if (!hasBadgeImage) {
-      return false;
-    }
-
-    // Also check if the badge links back to our site
-    // Allow SITE_URL and any subpaths
-    const siteUrlObj = new URL(SITE_URL);
-    const hostname = siteUrlObj.hostname.replace(/^www\./, "");
-    // Escape dots for regex
-    const escapedHostname = hostname.replace(/\./g, "\\.");
-
-    // Pattern matches: https://(www.)?hostname(/.*)?
-    const siteLinkPattern = new RegExp(
-      `href=["']https:\\/\\/(www\\.)?${escapedHostname}(\\/.*)?["']`,
-      "i",
-    );
-    const hasSiteLink = siteLinkPattern.test(html);
-
-    if (!hasSiteLink) {
-      return false;
-    }
-
-    return true;
+    const { url, html } = await safeFetchHtml(parseHttpUrl(targetUrl));
+    return containsLinkedBadge(html, url);
   } catch {
     return false;
   }

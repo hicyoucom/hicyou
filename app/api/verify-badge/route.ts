@@ -2,6 +2,7 @@ import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { verifyBadge } from "@/lib/badge-verify";
 import { getClientIp, checkActionRateLimit } from "@/lib/rate-limit";
+import { parseHttpUrl } from "@/lib/url-validator";
 
 const MAX_VERIFICATIONS_PER_HOUR = 20;
 const VERIFICATION_WINDOW_MS = 60 * 60 * 1000;
@@ -29,23 +30,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { url } = body;
-
-    if (!url) {
-      return NextResponse.json(
-        { error: "URL is required", verified: false },
-        { status: 400 }
-      );
-    }
-
-    // Validate URL format
+    const body: unknown = await request.json().catch(() => null);
+    let url: string;
     try {
-      new URL(url.startsWith("http") ? url : `https://${url}`);
+      if (
+        !body ||
+        typeof body !== "object" ||
+        !("url" in body) ||
+        typeof body.url !== "string"
+      ) {
+        throw new Error("URL is required");
+      }
+      url = parseHttpUrl(body.url).toString();
     } catch {
       return NextResponse.json(
         { error: "Invalid URL format", verified: false },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

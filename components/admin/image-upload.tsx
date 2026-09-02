@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { SafeExternalImage } from "@/components/safe-external-image";
 
 interface ImageUploadProps {
   type: "logo" | "cover";
@@ -52,13 +53,6 @@ export function ImageUpload({
     try {
       setIsUploading(true);
       setUploadProgress("Uploading...");
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
 
       // Upload to API
       const formData = new FormData();
@@ -135,9 +129,7 @@ export function ImageUpload({
       {preview && (
         <div className="relative rounded-lg border p-2 bg-muted/50">
           <div className="relative aspect-video w-full overflow-hidden rounded-md bg-muted">
-            {/* Preview URLs may come from arbitrary HTTPS publisher hosts. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <SafeExternalImage
               src={preview}
               alt="Preview"
               className="h-full w-full object-contain"

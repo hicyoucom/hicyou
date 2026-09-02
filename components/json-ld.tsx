@@ -4,12 +4,28 @@ interface JsonLdProps {
   data: Record<string, unknown>;
 }
 
+const JSON_LD_ESCAPE: Record<string, string> = {
+  "<": "\\u003c",
+  ">": "\\u003e",
+  "&": "\\u0026",
+  "\u2028": "\\u2028",
+  "\u2029": "\\u2029",
+};
+
+/** Serialize JSON for an inline script data block without creating HTML. */
+export function serializeJsonLd(data: Record<string, unknown>): string {
+  return JSON.stringify(data).replace(
+    /[<>&\u2028\u2029]/g,
+    (character) => JSON_LD_ESCAPE[character],
+  );
+}
+
 export function JsonLd({ data }: JsonLdProps) {
   return (
     <script
       type="application/ld+json"
       dangerouslySetInnerHTML={{
-        __html: JSON.stringify(data).replace(/<\/script/gi, "<\\/script"),
+        __html: serializeJsonLd(data),
       }}
     />
   );

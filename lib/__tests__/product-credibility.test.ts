@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { generateSoftwareApplicationSchema } from "@/components/json-ld";
+import {
+  generateSoftwareApplicationSchema,
+  serializeJsonLd,
+} from "@/components/json-ld";
 import {
   countMeaningfulListingItems,
   getDisplayableListingItems,
@@ -83,6 +86,19 @@ describe("product credibility facts", () => {
 });
 
 describe("SoftwareApplication JSON-LD record timestamps", () => {
+  test("escapes HTML-significant characters inside the script data block", () => {
+    const value = {
+      description: "</script><img src=x onerror=alert(1)>&\u2028next",
+    };
+    const serialized = serializeJsonLd(value);
+
+    expect(serialized).not.toContain("<");
+    expect(serialized).not.toContain(">");
+    expect(serialized).not.toContain("&");
+    expect(serialized).not.toContain("\u2028");
+    expect(JSON.parse(serialized)).toEqual(value);
+  });
+
   test("emits only valid HiCyou record timestamps", () => {
     const schema = generateSoftwareApplicationSchema({
       title: "Example tool",

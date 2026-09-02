@@ -41,4 +41,4 @@ COPY --from=migration-dependencies --chown=nextjs:nodejs /migrate/node_modules .
 COPY --from=builder /app/LICENSE /app/NOTICE /app/THIRD_PARTY_LICENSES.md /usr/share/licenses/hicyou/
 USER nextjs
 EXPOSE 3000
-CMD ["sh", "-c", "MIGRATIONS_STRICT=1 node scripts/migrate.mjs && node server.js"]
+CMD ["sh", "-c", "node scripts/migrate.mjs && node server.js"]

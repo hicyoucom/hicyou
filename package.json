@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "MIGRATIONS_STRICT=1 node -r dotenv/config scripts/migrate.mjs",
+    "db:migrate": "node -r dotenv/config scripts/migrate.mjs",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx db/seed.ts",
     "migrate:v1": "node -r dotenv/config scripts/migrate-v1-to-v2.mjs",

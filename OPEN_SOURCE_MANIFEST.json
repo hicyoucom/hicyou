@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-preview-security-20260903-r2",
+  "exportId": "v2-preview-security-20260903-r3",
   "files": [
     {
       "path": ".dockerignore",
@@ -499,7 +499,7 @@
     },
     {
       "path": "app/api/verify-badge/route.ts",
-      "sha256": "122c6e00d1aca6a1f1f6c60a90d5d748fbc0f400b03a4d7f0cea1b93db273006",
+      "sha256": "107ad104b577f8f324b74ce88b6ada185c0e9c130a85a1a079a20e9c433d738f",
       "ownership": "generated"
     },
     {
@@ -634,7 +634,7 @@
     },
     {
       "path": "components/admin/image-upload.tsx",
-      "sha256": "85c9a10534e20886e96c45c351cbbda48e0c87af4e3d593135fae9caf6baadf6",
+      "sha256": "fa4b471caac2b7587aa67b0502b95029d7cb21fbc7761bbf5f5b6e63f7e26b04",
       "ownership": "generated"
     },
     {
@@ -764,7 +764,7 @@
     },
     {
       "path": "components/json-ld.tsx",
-      "sha256": "3f3ed462f1891aac8a9bcf073bfc4d6deda34bb8c6451e800e1b9c27449bb343",
+      "sha256": "03d3503d30208be76b296b2ce861b6bf62c1823e5af33cce0386c905f0006aac",
       "ownership": "generated"
     },
     {
@@ -984,7 +984,7 @@
     },
     {
       "path": "Dockerfile",
-      "sha256": "eac0e0a0365803df06c73654348d3a9e4346038421354c26f0a3a3e499a8ab73",
+      "sha256": "bca3fe896dc3ca2ae20d45a60a9ae644686670cb4ae1ce0a4c19ab01e11b23d9",
       "ownership": "generated"
     },
     {
@@ -1083,6 +1083,11 @@
       "ownership": "generated"
     },
     {
+      "path": "lib/__tests__/badge-verify.test.ts",
+      "sha256": "2226f6a128184487e1c21e3e05b01d6fa9b27cffc7539030e166abcefecf97cc",
+      "ownership": "generated"
+    },
+    {
       "path": "lib/__tests__/batch-translate.test.ts",
       "sha256": "0ebb0b1f56f0d1806c6b1a049daddb56cbc1475a16d0c4150484a56efe67b52a",
       "ownership": "generated"
@@ -1149,7 +1154,7 @@
     },
     {
       "path": "lib/__tests__/product-credibility.test.ts",
-      "sha256": "ab60a296a42488904ef07b33a1e9662fa08e69a6a4cc54d2276dc4936d439d22",
+      "sha256": "1eed5bfb41c36b2ae35cea75a6a89ec2af2c4f571a9c91552abd303f3816c523",
       "ownership": "generated"
     },
     {
@@ -1319,7 +1324,7 @@
     },
     {
       "path": "lib/badge-verify.ts",
-      "sha256": "591aa0d30c0bce210bf86241da8792c0d06082894f5fb3e6f90a50ee9e25f598",
+      "sha256": "555e2933fa6470bb645844e6fe83830d396f874f1a0cfdec691fa83a557c5ecd",
       "ownership": "generated"
     },
     {
@@ -1654,7 +1659,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "dad0e33fe089dc93cae5c36f55c7fd7a08a0bc550b1245067cc3b0dbe735c88f",
+      "sha256": "6fc4d2f6953169c55aa26948edbf7da1fb02cc52c46eb049436fe3c3839ff4d8",
       "ownership": "generated"
     },
     {
@@ -1759,7 +1764,7 @@
     },
     {
       "path": "scripts/migrate.mjs",
-      "sha256": "288ce4939f28ff28779d66e6c3af6f63c33527905022dcd3f7e389a8de8aedea",
+      "sha256": "acad1f03c90fb679e450169cc93dd05eefe0df76cf23b37c2780ab85239f0a8c",
       "ownership": "generated"
     },
     {
