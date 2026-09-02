@@ -84,7 +84,7 @@
     },
     {
       "path": "app/[locale]/c/page.tsx",
-      "sha256": "3e44c39ba4e3e1662e0ec0fc28737d7caf6d52d48f4fa3ce00d5f8647d0b3511",
+      "sha256": "184f0b43b62bdcfd6740cb11526e22e9fdaab5bf98cf6888a58e54035b1059ff",
       "ownership": "generated"
     },
     {
@@ -179,7 +179,7 @@
     },
     {
       "path": "app/[locale]/legal/privacy/page.tsx",
-      "sha256": "ed8f0f5a39281a3f2bb2c3a06fcfb60a1d8de559137dab8e5bad1c597b98c1b1",
+      "sha256": "d64b38af92a94a6b9b7412bc527221d9b1959605721ebff57c5907a8b4b08040",
       "ownership": "generated"
     },
     {
@@ -194,7 +194,7 @@
     },
     {
       "path": "app/[locale]/not-found.tsx",
-      "sha256": "4711c420e487a3ca9579f7d8ec884a70bf5b5d02beb32672595b2a5df4a84185",
+      "sha256": "cf1248ebeb240b44e7b349c7b267ecd29f6dfeddb9631a5478bb5604d693161a",
       "ownership": "generated"
     },
     {
@@ -1749,7 +1749,7 @@
     },
     {
       "path": "scripts/public-boundary-lib.mjs",
-      "sha256": "f9fee7b2b6ab099cb2c372b8324db02a2c027aae500e439e2385e48b2a4c4b09",
+      "sha256": "f275538b233a36215a9b561be40d1ae80470898e03650e1c8e67665ef083b620",
       "ownership": "generated"
     },
     {

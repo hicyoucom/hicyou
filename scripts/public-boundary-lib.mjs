@@ -60,10 +60,17 @@ export async function listFiles(root) {
     await visitFilesystem("");
   }
 
+  const presentFiles = [];
   const folded = new Map();
   for (const relativePath of files) {
     if (!safeRelative(relativePath)) throw new Error("unsafe filesystem path");
-    const metadata = await lstat(path.join(root, relativePath));
+    let metadata;
+    try {
+      metadata = await lstat(path.join(root, relativePath));
+    } catch (error) {
+      if (error.code === "ENOENT") continue;
+      throw error;
+    }
     if (metadata.isSymbolicLink())
       throw new Error(`symbolic link is forbidden: ${relativePath}`);
     if (!metadata.isFile())
@@ -73,8 +80,9 @@ export async function listFiles(root) {
     if (previous && previous !== relativePath)
       throw new Error("case-folding path conflict");
     folded.set(key, relativePath);
+    presentFiles.push(relativePath);
   }
-  return files;
+  return presentFiles;
 
   async function visitFilesystem(relativeDirectory) {
     const entries = await readdir(path.join(root, relativeDirectory), {
