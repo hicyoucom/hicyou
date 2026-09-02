@@ -4,7 +4,7 @@ import { db } from "@/db/client";
 import { webhooks } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
-import { generateWebhookSecret, isBlockedWebhookHost } from "@/lib/webhooks";
+import { generateWebhookSecret, validateWebhookUrl } from "@/lib/webhooks";
 import { encryptSecret } from "@/lib/webhook-crypto";
 import { z } from "zod";
 
@@ -28,13 +28,19 @@ const EVENT = z.enum(["product.upsert", "product.delete"]);
 const createSchema = z.object({
   consumer: z.string().trim().min(1).max(64),
   url: z.string().url().max(2048),
-  events: z.array(EVENT).nonempty().default(["product.upsert", "product.delete"]),
+  events: z
+    .array(EVENT)
+    .nonempty()
+    .default(["product.upsert", "product.delete"]),
 });
 
 export async function GET() {
   const auth = await requireAdmin();
   if (!auth.ok) return jsonError("Unauthorized", auth.status);
-  const data = await db.select(SAFE).from(webhooks).orderBy(desc(webhooks.createdAt));
+  const data = await db
+    .select(SAFE)
+    .from(webhooks)
+    .orderBy(desc(webhooks.createdAt));
   return NextResponse.json({ data });
 }
 
@@ -46,16 +52,23 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return jsonError("Invalid body", 400, { details: parsed.error.flatten() });
   }
-  const { consumer, url, events } = parsed.data;
+  const { consumer, url: submittedUrl, events } = parsed.data;
 
-  // Require https in production to avoid leaking signed payloads in cleartext.
-  if (process.env.NODE_ENV === "production" && !url.startsWith("https://")) {
-    return jsonError("Webhook URL must be https", 400);
-  }
-  // SSRF guard: never let a webhook target internal/loopback/metadata hosts.
-  if (isBlockedWebhookHost(url)) {
+  let destination: URL;
+  try {
+    destination = await validateWebhookUrl(submittedUrl);
+  } catch {
     return jsonError("Webhook URL host is not allowed", 400);
   }
+
+  // Require https in production to avoid leaking signed payloads in cleartext.
+  if (
+    process.env.NODE_ENV === "production" &&
+    destination.protocol !== "https:"
+  ) {
+    return jsonError("Webhook URL must be https", 400);
+  }
+  const url = destination.toString();
 
   const secret = generateWebhookSecret();
   // Store encrypted (or plaintext if WEBHOOK_SECRET_KEY unset); return plaintext once.

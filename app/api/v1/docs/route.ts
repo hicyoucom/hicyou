@@ -9,7 +9,11 @@ const HTML = `<!doctype html>
   </head>
   <body>
     <script id="api-reference" data-url="/api/v1/openapi"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.62.4"
+      integrity="sha384-8krtlmjW90KNKDXFfcFls2ueiU+9/jzPmL/C2r7Y2NPh9KWCau8HyweAvBvm/y0y"
+      crossorigin="anonymous"
+    ></script>
   </body>
 </html>`;
 

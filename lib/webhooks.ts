@@ -4,16 +4,23 @@
 // fully successful drain, and never regresses), so consumers must dedupe by
 // product source_id. After too many consecutive failures a webhook auto-disables.
 import { randomBytes, createHmac, randomUUID } from "node:crypto";
+import { isIP } from "node:net";
 import { sql, and, eq, isNull, asc } from "drizzle-orm";
 import { db } from "@/db/client";
 import { webhooks, webhookDeliveries, type Webhook } from "@/db/schema";
 import { listChanges, type ChangeEntry } from "@/lib/data/products";
 import { decryptSecret } from "@/lib/webhook-crypto";
+import {
+  isBlockedIp,
+  parseHttpUrl,
+  validateUrlForFetch,
+  type HostAddressResolver,
+} from "@/lib/url-validator";
 
 const BATCH = 200;
-const MAX_PAGES = 25;             // ≤ 5000 changes per webhook per run
-const MAX_WEBHOOKS_PER_RUN = 50;  // bound fan-out / runtime per cron tick
-const MAX_FAILURES = 15;          // consecutive failures before auto-disable
+const MAX_PAGES = 25; // ≤ 5000 changes per webhook per run
+const MAX_WEBHOOKS_PER_RUN = 50; // bound fan-out / runtime per cron tick
+const MAX_FAILURES = 15; // consecutive failures before auto-disable
 const TIMEOUT_MS = 8000;
 const CURSOR_OVERLAP_MS = 60_000;
 
@@ -24,7 +31,9 @@ export function webhookCursorAdvanceTo(options: {
   currentCursor: Date;
 }): string {
   if (options.drained) {
-    return new Date(options.runStart.getTime() - CURSOR_OVERLAP_MS).toISOString();
+    return new Date(
+      options.runStart.getTime() - CURSOR_OVERLAP_MS,
+    ).toISOString();
   }
   return options.lastTs ?? options.currentCursor.toISOString();
 }
@@ -34,31 +43,51 @@ export function generateWebhookSecret(): string {
 }
 
 /** Stripe-style signature over `${timestamp}.${body}`. */
-export function signPayload(secret: string, body: string, timestamp: number): string {
-  const mac = createHmac("sha256", secret).update(`${timestamp}.${body}`).digest("hex");
+export function signPayload(
+  secret: string,
+  body: string,
+  timestamp: number,
+): string {
+  const mac = createHmac("sha256", secret)
+    .update(`${timestamp}.${body}`)
+    .digest("hex");
   return `t=${timestamp},v1=${mac}`;
 }
 
-/**
- * SSRF guard: reject loopback/private/link-local/metadata hosts so an admin
- * (or a mistaken paste) can't point a webhook at internal infrastructure.
- * Host-literal based; deployments behind split-horizon DNS should add their own
- * egress controls for full protection.
- */
+/** Fast lexical SSRF guard used before the asynchronous DNS validation. */
 export function isBlockedWebhookHost(raw: string): boolean {
-  let u: URL;
+  let url: URL;
   try {
-    u = new URL(raw);
+    url = parseHttpUrl(raw);
   } catch {
     return true;
   }
-  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  if (h === "localhost" || h.endsWith(".internal") || h.endsWith(".local")) return true;
-  if (/^127\./.test(h) || h === "0.0.0.0") return true;
-  if (/^10\./.test(h) || /^192\.168\./.test(h) || /^169\.254\./.test(h)) return true;
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
-  if (h === "::1" || h.startsWith("fe80:") || h.startsWith("fc") || h.startsWith("fd")) return true;
-  return false;
+  if (url.port) return true;
+
+  const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (
+    hostname === "localhost" ||
+    hostname.endsWith(".internal") ||
+    hostname.endsWith(".local")
+  ) {
+    return true;
+  }
+  return isIP(hostname) !== 0 && isBlockedIp(hostname);
+}
+
+/**
+ * Resolves every hostname immediately before delivery and rejects the URL if
+ * any answer is private, reserved, or otherwise non-public. Deployments should
+ * still deny private-network egress to cover connection-time DNS rebinding.
+ */
+export async function validateWebhookUrl(
+  raw: string,
+  resolver?: HostAddressResolver,
+): Promise<URL> {
+  if (isBlockedWebhookHost(raw)) {
+    throw new Error("blocked host (SSRF guard)");
+  }
+  return validateUrlForFetch(raw, resolver);
 }
 
 function changeEvent(c: ChangeEntry): string {
@@ -79,7 +108,9 @@ async function recordDelivery(
   error: string | null,
 ): Promise<void> {
   try {
-    await db.insert(webhookDeliveries).values({ webhookId, eventCount, status, httpStatus, error });
+    await db
+      .insert(webhookDeliveries)
+      .values({ webhookId, eventCount, status, httpStatus, error });
   } catch (err) {
     console.error("[webhooks] delivery log insert failed:", err);
   }
@@ -88,7 +119,11 @@ async function recordDelivery(
 async function postBatch(wh: Webhook, events: ChangeEntry[]): Promise<void> {
   const timestamp = Math.floor(Date.now() / 1000);
   const deliveryId = randomUUID();
-  const body = JSON.stringify({ delivery_id: deliveryId, delivered_at: new Date().toISOString(), events });
+  const body = JSON.stringify({
+    delivery_id: deliveryId,
+    delivered_at: new Date().toISOString(),
+    events,
+  });
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
@@ -96,7 +131,8 @@ async function postBatch(wh: Webhook, events: ChangeEntry[]): Promise<void> {
   try {
     // Inside try so a decrypt/key-config failure also records a delivery row.
     const signature = signPayload(decryptSecret(wh.secret), body, timestamp);
-    const res = await fetch(wh.url, {
+    const destination = await validateWebhookUrl(wh.url);
+    const res = await fetch(destination, {
       method: "POST",
       redirect: "manual", // never follow redirects — defeats the SSRF host check
       headers: {
@@ -113,7 +149,13 @@ async function postBatch(wh: Webhook, events: ChangeEntry[]): Promise<void> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`); // 3xx (manual redirect) also fails here
     await recordDelivery(wh.id, events.length, "success", httpStatus, null);
   } catch (err) {
-    await recordDelivery(wh.id, events.length, "failed", httpStatus, err instanceof Error ? err.message : String(err));
+    await recordDelivery(
+      wh.id,
+      events.length,
+      "failed",
+      httpStatus,
+      err instanceof Error ? err.message : String(err),
+    );
     throw err;
   } finally {
     clearTimeout(timer);
@@ -122,8 +164,6 @@ async function postBatch(wh: Webhook, events: ChangeEntry[]): Promise<void> {
 
 /** Drain every due page for one webhook, advancing the cursor only on full success. */
 async function deliverOne(wh: Webhook): Promise<"sent" | "empty"> {
-  if (isBlockedWebhookHost(wh.url)) throw new Error("blocked host (SSRF guard)");
-
   const runStart = new Date();
   let cursorTok: string | null = null;
   let pages = 0;
@@ -134,7 +174,8 @@ async function deliverOne(wh: Webhook): Promise<"sent" | "empty"> {
   for (;;) {
     const page = await listChanges(wh.cursor, cursorTok, BATCH);
     // We page past ALL of page.data (subscribed or not), so the cursor covers it.
-    if (page.data.length > 0) lastTs = changeEffectiveTs(page.data[page.data.length - 1]);
+    if (page.data.length > 0)
+      lastTs = changeEffectiveTs(page.data[page.data.length - 1]);
     const events = page.data.filter((c) => wh.events.includes(changeEvent(c)));
     if (events.length > 0) {
       await postBatch(wh, events); // throws → caller records failure, cursor not advanced
@@ -175,7 +216,9 @@ async function deliverOne(wh: Webhook): Promise<"sent" | "empty"> {
   return sentAny ? "sent" : "empty";
 }
 
-async function processWebhook(wh: Webhook): Promise<"sent" | "empty" | "failed"> {
+async function processWebhook(
+  wh: Webhook,
+): Promise<"sent" | "empty" | "failed"> {
   try {
     return await deliverOne(wh);
   } catch (err) {
@@ -209,7 +252,12 @@ export async function deliverDueWebhooks(): Promise<DeliverySummary> {
     .orderBy(asc(webhooks.cursor))
     .limit(MAX_WEBHOOKS_PER_RUN);
 
-  const summary: DeliverySummary = { processed: 0, sent: 0, empty: 0, failed: 0 };
+  const summary: DeliverySummary = {
+    processed: 0,
+    sent: 0,
+    empty: 0,
+    failed: 0,
+  };
   for (const wh of active) {
     summary.processed++;
     summary[await processWebhook(wh)]++;

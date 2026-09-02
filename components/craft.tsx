@@ -98,18 +98,11 @@ type ArticleProps = {
   children?: React.ReactNode;
   className?: string;
   id?: string;
-  dangerouslySetInnerHTML?: { __html: string };
 };
 
-const Article = ({
-  children,
-  className,
-  id,
-  dangerouslySetInnerHTML,
-}: ArticleProps) => {
+const Article = ({ children, className, id }: ArticleProps) => {
   return (
     <article
-      dangerouslySetInnerHTML={dangerouslySetInnerHTML}
       className={cn(
         // General Prose
         "prose:font-sans prose prose-neutral dark:prose-invert",

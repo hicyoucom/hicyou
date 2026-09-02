@@ -29,7 +29,7 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "7465607df0bb427f5360e94dc1a122481319a03b67028be18b1e0c19d816f18d",
+      "sha256": "2667abf903392c4697b9e2abbc6418c46bcb37390e781e7f24ee68197972e5d7",
       "ownership": "generated"
     },
     {
@@ -299,7 +299,7 @@
     },
     {
       "path": "app/api/admin/webhooks/route.ts",
-      "sha256": "6e594c9083d6582bfe5a25511d0a0a483384ea1af86b56b585e5bf159856015f",
+      "sha256": "a922a07f5bb1a37798d57f86b1f2e2617e04581b923924f9300ecae770dde43f",
       "ownership": "generated"
     },
     {
@@ -459,7 +459,7 @@
     },
     {
       "path": "app/api/v1/docs/route.ts",
-      "sha256": "fc4242729b6d6517241b9a0838a4f4002d1d5c316e3f4261f8506e962382b392",
+      "sha256": "688934cf5ae522f99bf209a9c8d772a4761b6ac3a79869ebde00cf750d43e173",
       "ownership": "generated"
     },
     {
@@ -719,7 +719,7 @@
     },
     {
       "path": "components/craft.tsx",
-      "sha256": "bfc3fdb5506eefd1713c875bcb896be390f1a312186dd88e7cc82db952befad4",
+      "sha256": "c4002d366b7c490f12d30af6d06675ed4c2403162fc831acc354df00bd8c8993",
       "ownership": "generated"
     },
     {
@@ -1219,7 +1219,7 @@
     },
     {
       "path": "lib/__tests__/webhooks.test.ts",
-      "sha256": "3169ef5e48ca78d65ef29d04d1c193ff981b5884c9703c15f87dedc4465a11b3",
+      "sha256": "1df5a9c02683cba41776818ca128bd5ed8febd00b6a388181f640bc2be306e22",
       "ownership": "generated"
     },
     {
@@ -1589,7 +1589,7 @@
     },
     {
       "path": "lib/webhooks.ts",
-      "sha256": "49b8aa8f3f39a1fb523742c95ed11a743b8b061c23739783076ddfd7b4e3d52b",
+      "sha256": "4806e1d123557dc8ab54cb12ee0a827ce04f2a5627e024a7b3b43c5f4a0a96a0",
       "ownership": "generated"
     },
     {
