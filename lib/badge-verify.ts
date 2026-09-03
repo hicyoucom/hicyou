@@ -1,6 +1,6 @@
 /**
  * Badge verification utility
- * Checks if a website contains the Hi Cyou badge
+ * Checks if a website contains the HiCyou badge
  */
 
 import { load } from "cheerio";

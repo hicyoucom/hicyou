@@ -2,7 +2,7 @@
 const HTML = `<!doctype html>
 <html>
   <head>
-    <title>Hi Cyou Directory API — Reference</title>
+    <title>HiCyou Directory API — Reference</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex" />

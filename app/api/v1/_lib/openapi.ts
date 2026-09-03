@@ -19,10 +19,10 @@ const PARAM_LIMIT = {
 export const openapiSpec = {
   openapi: "3.1.0",
   info: {
-    title: "Hi Cyou Directory API",
+    title: "HiCyou Directory API",
     version: SCHEMA_VERSION,
     description:
-      "Read-only API to sync directory products from Hi Cyou. Token-authed, incremental. " +
+      "Read-only API to sync directory products from HiCyou. Token-authed, incremental. " +
       "See the consumer guide for the full sync recipe.",
   },
   servers: [{ url: "https://hicyou.com/api/v1" }],

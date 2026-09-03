@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-security-candidate-20260903-05",
+  "exportId": "v2-content-preview-20260903-06",
   "files": [
     {
       "path": ".dockerignore",
@@ -49,7 +49,7 @@
     },
     {
       "path": "app/[locale]/about/page.tsx",
-      "sha256": "ebd3ae1c83ec8cf07a3bf73b3522e9605a245dbcd505a1a7365f3840058466bd",
+      "sha256": "fc814a87ef7c663a4fb6a01bf2294a8312e34c49c5228ccc74220afeae1d4693",
       "ownership": "generated"
     },
     {
@@ -64,7 +64,7 @@
     },
     {
       "path": "app/[locale]/badge/badge-content.tsx",
-      "sha256": "a899adee9c28ff532f492aae94d19e21b0b12ca7f0067c1ddb7fb54a8e0fcada",
+      "sha256": "7d79068aed3c97dacae7580f31f27b2e04879270202ab35dbe84f18354413935",
       "ownership": "generated"
     },
     {
@@ -179,12 +179,12 @@
     },
     {
       "path": "app/[locale]/legal/privacy/page.tsx",
-      "sha256": "d64b38af92a94a6b9b7412bc527221d9b1959605721ebff57c5907a8b4b08040",
+      "sha256": "9435f1d0c1987ccfbdc58ed2351f87f6e83a49e2d730c9fbc7928cbe3e7b179a",
       "ownership": "generated"
     },
     {
       "path": "app/[locale]/legal/terms/page.tsx",
-      "sha256": "ca0013a7df77494b3e3f0aaa77f4ba80b84521f8c873e4fd78c60d520775c040",
+      "sha256": "64480705b84fad011779daee7dcaf64e1ab386c46e44e3a66c4a754b8005769b",
       "ownership": "generated"
     },
     {
@@ -429,7 +429,7 @@
     },
     {
       "path": "app/api/v1/_lib/openapi.ts",
-      "sha256": "5a6d480eaff63710008a98f8d5d7ac48686c95a3db3c2f51ccfde3f7efa9756d",
+      "sha256": "069e655fff83b172dbd8d2594b3267a4ffb12682b54ea3b5121acc5592178094",
       "ownership": "generated"
     },
     {
@@ -459,7 +459,7 @@
     },
     {
       "path": "app/api/v1/docs/route.ts",
-      "sha256": "923cc902267ee22699ffaf22d0540ba010113ace81055e3bc638b0d23ff6db6d",
+      "sha256": "39b4eeb7939d79b1282ed28358cf19737ed6eb6c62de63e88b20e23b63ca8efe",
       "ownership": "generated"
     },
     {
@@ -569,7 +569,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "0ec4cf0abbb2e9fb76631270f99ece5cbe7484d40938b02d07d70c785e22ffe8",
+      "sha256": "bcd88cb9aef706098f6b416c8c21bb39639904273a9bf914a9ef2f8eb079ecde",
       "ownership": "generated"
     },
     {
@@ -1014,37 +1014,37 @@
     },
     {
       "path": "i18n/messages/de.json",
-      "sha256": "94f74815f53e9ede317c985b68035e057ec7d448c06b832124f94601d34f7889",
+      "sha256": "8ac52570d9689d12b0ce0c6e34a713f6071d66d3dc7734226e580b560667b3ed",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/en.json",
-      "sha256": "980f616ecdcbe4b8573e8f5b76f4863eaa185e5b630c675cd847ea97ea75d833",
+      "sha256": "dc108cc2b876bb77af94bc319a656ba275b4e6d19012bf38218e5fcaecd1713f",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/es.json",
-      "sha256": "f176763922d557edc7181260749ff8ada39e07f27ced449e08640bfdcb853c35",
+      "sha256": "dfee35af0eea5bb077eb1cd0866bc80fbd16c408b263094666e7a7305149b327",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/fr.json",
-      "sha256": "192552e00c392a6c597e82aa608eb2af08f82bb9d80601547bd208a382efdf83",
+      "sha256": "ef9e3eaf50da993625d0571b0e6a624d85501305efca595d7fc32935336755ac",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/ja.json",
-      "sha256": "c50b2fe61586fb493d352ae7a4f782eb2e636a88141afc5aad18dfd1687a5fb9",
+      "sha256": "08239396e16a133578f0ad93b10ff92083e3ddfc97600cf27c98780dc4ead7c2",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/pt.json",
-      "sha256": "9ae66aeea775f5eff6647d8684bdf0f616af0ad86169e845eba46d17dc83adce",
+      "sha256": "63bcfb015d0be796b7bd836eb22fccfd68b43a3ff440d19bcd5b00769d0a5e69",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/zh.json",
-      "sha256": "ecc8ac7e66bea51059109d8e45d61580b4ad8eafbf3ede3fb70160236f9350a6",
+      "sha256": "474a2ccd1005e22e9a4a3d210c816d980f4d00bd63b0d5ac5f9f25a2122d44e6",
       "ownership": "generated"
     },
     {
@@ -1324,7 +1324,7 @@
     },
     {
       "path": "lib/badge-verify.ts",
-      "sha256": "555e2933fa6470bb645844e6fe83830d396f874f1a0cfdec691fa83a557c5ecd",
+      "sha256": "799b2df7e5295fa4e49f2b6c0efd6071a026a011709f7f59651dcfbf4ed1ac15",
       "ownership": "generated"
     },
     {
@@ -1754,7 +1754,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "9dda0349b68eae4336d463fa401a87c848753b074fa3c4c53287e73f7c4b39dd",
+      "sha256": "d67d552afc7b4a29e5fd081e67f38afed19d0b8b8896c10888879e4c83d642d8",
       "ownership": "generated"
     },
     {

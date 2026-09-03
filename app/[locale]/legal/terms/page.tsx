@@ -4,8 +4,8 @@ import { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Hi Cyou",
-  description: "Terms of Service for Hi Cyou directory platform",
+  title: "Terms of Service | HiCyou",
+  description: "Terms of Service for HiCyou directory platform",
 };
 
 export default function TermsOfService() {
@@ -33,7 +33,7 @@ export default function TermsOfService() {
                   1. Agreement to Terms
                 </h2>
                 <p>
-                  By accessing and using Hi Cyou ("the Service"), you accept and
+                  By accessing and using HiCyou ("the Service"), you accept and
                   agree to be bound by the terms and provision of this
                   agreement. If you do not agree to abide by the above, please
                   do not use this service.
@@ -98,7 +98,7 @@ export default function TermsOfService() {
               <section className="space-y-4">
                 <h2 className="text-2xl font-semibold">4. User Submissions</h2>
                 <p>
-                  By submitting content to Hi Cyou, you grant us a
+                  By submitting content to HiCyou, you grant us a
                   non-exclusive, worldwide, royalty-free license to use,
                   reproduce, modify, and display the submitted content. You
                   represent that:
@@ -119,7 +119,7 @@ export default function TermsOfService() {
                   5. Dofollow Links Policy
                 </h2>
                 <p>
-                  Hi Cyou may offer dofollow links to submissions that meet our
+                  HiCyou may offer dofollow links to submissions that meet our
                   quality standards. Displaying the optional attribution badge
                   may be considered as one trust signal, but it is not a
                   software license requirement. We reserve the right to:
@@ -152,7 +152,7 @@ export default function TermsOfService() {
                 <h2 className="text-2xl font-semibold">7. Disclaimer</h2>
                 <p>
                   The Service is provided "as is" without any representations or
-                  warranties, express or implied. Hi Cyou makes no
+                  warranties, express or implied. HiCyou makes no
                   representations or warranties in relation to the Service or
                   the information and materials provided on the Service.
                 </p>
@@ -169,7 +169,7 @@ export default function TermsOfService() {
                   8. Limitations of Liability
                 </h2>
                 <p>
-                  In no event shall Hi Cyou or its suppliers be liable for any
+                  In no event shall HiCyou or its suppliers be liable for any
                   damages (including, without limitation, damages for loss of
                   data or profit, or due to business interruption) arising out
                   of the use or inability to use the Service.

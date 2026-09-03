@@ -4,8 +4,8 @@ import { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Hi Cyou",
-  description: "Privacy Policy for Hi Cyou directory platform",
+  title: "Privacy Policy | HiCyou",
+  description: "Privacy Policy for HiCyou directory platform",
 };
 
 export default function PrivacyPolicy() {
@@ -31,7 +31,7 @@ export default function PrivacyPolicy() {
               <section className="space-y-4">
                 <h2 className="text-2xl font-semibold">1. Introduction</h2>
                 <p>
-                  Hi Cyou ("we", "our", or "us") is committed to protecting your
+                  HiCyou ("we", "our", or "us") is committed to protecting your
                   privacy. This Privacy Policy explains how we collect, use,
                   disclose, and safeguard your information when you visit our
                   website and use our services.

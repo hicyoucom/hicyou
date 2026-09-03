@@ -1,6 +1,3 @@
-import { Section, Container } from "@/components/craft";
-import { TopNav } from "@/components/top-nav";
-import { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -10,15 +7,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Github, Globe, Zap, Heart, Code, Users } from "lucide-react";
-import Link from "next/link";
+import { Container, Section } from "@/components/craft";
+import { TopNav } from "@/components/top-nav";
+import { Code, Github, Globe, Heart, Users, Zap } from "lucide-react";
+import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = {
-  title: "About Hi Cyou | Open Source Directory Platform",
+  title: "About HiCyou | Open-source directory platform",
   description:
-    "Hi Cyou is a free, open-source directory platform helping SaaS products get discovered. Build your own directory with our Next.js template.",
+    "HiCyou is a self-hosted, multilingual directory for products and online resources, with submissions, moderation, APIs, webhooks, and optional AI workflows.",
 };
 
 export default async function AboutPage() {
@@ -34,7 +34,7 @@ export default async function AboutPage() {
               <div className="mb-6 flex justify-center">
                 <Image
                   src="/logo.svg"
-                  alt="Hi Cyou Logo"
+                  alt="HiCyou logo"
                   width={240}
                   height={100}
                   className="h-20 w-auto"
@@ -60,7 +60,7 @@ export default async function AboutPage() {
               </CardContent>
             </Card>
 
-            {/* What is Hi Cyou */}
+            {/* What is HiCyou */}
             <div className="space-y-8">
               <div className="space-y-4 text-center">
                 <h2 className="text-3xl font-bold">{t("whatIsTitle")}</h2>
@@ -241,7 +241,7 @@ export default async function AboutPage() {
                         <span>{t("licenseDeploy")}</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="font-bold text-red-500">⚠</span>
+                        <span className="font-bold text-primary">✓</span>
                         <span>
                           <strong>{t("licenseRequired")}</strong>{" "}
                           {t("licenseBadge")}
@@ -284,25 +284,29 @@ export default async function AboutPage() {
                 <CardContent className="pt-6">
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                     <div className="space-y-2 text-center">
-                      <div className="font-semibold">Next.js 16</div>
+                      <div className="font-semibold">
+                        Next.js 16.3 + React 19
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         {t("techNextjs")}
                       </p>
                     </div>
                     <div className="space-y-2 text-center">
-                      <div className="font-semibold">TypeScript</div>
+                      <div className="font-semibold">TypeScript 5.9</div>
                       <p className="text-sm text-muted-foreground">
                         {t("techTypescript")}
                       </p>
                     </div>
                     <div className="space-y-2 text-center">
-                      <div className="font-semibold">Tailwind CSS</div>
+                      <div className="font-semibold">Tailwind CSS 3</div>
                       <p className="text-sm text-muted-foreground">
                         {t("techTailwind")}
                       </p>
                     </div>
                     <div className="space-y-2 text-center">
-                      <div className="font-semibold">Drizzle ORM</div>
+                      <div className="font-semibold">
+                        PostgreSQL + Drizzle ORM
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         {t("techDrizzle")}
                       </p>

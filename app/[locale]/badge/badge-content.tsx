@@ -18,10 +18,10 @@ export default function BadgeContent() {
 
   const badgeCode = {
     light: `<a href="${baseUrl}" rel="dofollow">
-  <img src="${baseUrl}/badge/featured-light.svg" alt="Featured on Hi Cyou" />
+  <img src="${baseUrl}/badge/featured-light.svg" alt="Featured on HiCyou" />
 </a>`,
     dark: `<a href="${baseUrl}" rel="dofollow">
-  <img src="${baseUrl}/badge/featured-dark.svg" alt="Featured on Hi Cyou" />
+  <img src="${baseUrl}/badge/featured-dark.svg" alt="Featured on HiCyou" />
 </a>`,
   };
 
@@ -119,7 +119,7 @@ export default function BadgeContent() {
             }`}>
             <Image
               src={`/badge/featured-${selectedTheme}.svg`}
-              alt="Hi Cyou Badge"
+              alt="HiCyou Badge"
               width={150}
               height={44}
               priority
