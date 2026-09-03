@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-content-preview-20260903-08",
+  "exportId": "v2.0.0",
   "files": [
     {
       "path": ".dockerignore",
@@ -569,7 +569,7 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "bcd88cb9aef706098f6b416c8c21bb39639904273a9bf914a9ef2f8eb079ecde",
+      "sha256": "f0f1ad5eb016f9ed08ccc53beaa8a2f1ba794b2e01eb416a2aba6fb402dbecd8",
       "ownership": "generated"
     },
     {
@@ -1664,7 +1664,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "b45f1e906ee25fa23a6670b9872f71486afef6977a0c8f99e4715e5f5ec0028d",
+      "sha256": "5a0e46c521b03a028400234a99633011f1f33cf4f52f52166ea68b506c491ff7",
       "ownership": "generated"
     },
     {

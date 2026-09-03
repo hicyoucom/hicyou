@@ -1,6 +1,6 @@
 {
   "name": "hicyou",
-  "version": "2.0.0-preview.1",
+  "version": "2.0.0",
   "private": true,
   "license": "Apache-2.0",
   "packageManager": "bun@1.4.0",

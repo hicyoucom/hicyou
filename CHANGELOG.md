@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0-preview.1
+## 2.0.0
 
 - Updated the public core to Next.js 16 and React 19.
 - Standardized the product name as HiCyou and refreshed the About page and README with the current stack and feature set.
