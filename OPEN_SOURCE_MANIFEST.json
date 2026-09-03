@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-content-preview-20260903-07",
+  "exportId": "v2-content-preview-20260903-08",
   "files": [
     {
       "path": ".dockerignore",
@@ -499,7 +499,7 @@
     },
     {
       "path": "app/api/verify-badge/route.ts",
-      "sha256": "107ad104b577f8f324b74ce88b6ada185c0e9c130a85a1a079a20e9c433d738f",
+      "sha256": "bdadb58b2f720f554b33421e243f80981bf9f4116427cea684783bb356d263ed",
       "ownership": "generated"
     },
     {
@@ -624,7 +624,7 @@
     },
     {
       "path": "components/admin/category-manager.tsx",
-      "sha256": "01f8f703e3a89d23fcad68df76268173c8a055f163bfa3a347c394935c4e871b",
+      "sha256": "8100b7f51c0c7d4de6c2813a2e194a96b4e04dd3d9903d26b9a8106cdd51ef4b",
       "ownership": "generated"
     },
     {
@@ -699,7 +699,7 @@
     },
     {
       "path": "components/category-filter.tsx",
-      "sha256": "8862a045aacf022c3eb6b483fd9f4e05fa65e632add688cc4f12508a1eaa9449",
+      "sha256": "e23fe02048f89419a0f86e6c71c07f86cb21c5fd0fe2f844d2bdaa882909ca6b",
       "ownership": "generated"
     },
     {
@@ -869,7 +869,7 @@
     },
     {
       "path": "components/ui/color-picker.tsx",
-      "sha256": "0093c3724789f7100482675562b215a47af2e91a8330103995609f6d556be545",
+      "sha256": "f1b636392a493a4d70b12680e979ad3f00b795019eb0fce1ef22115a86bc8585",
       "ownership": "generated"
     },
     {
@@ -889,7 +889,7 @@
     },
     {
       "path": "components/ui/icon-picker.tsx",
-      "sha256": "bc4a8e55c6976100a9f8a383436c601a58f98490f87a2d1c7716471593a32baa",
+      "sha256": "c3feb467856615596ad8e5a458021228036b0b7b043026c97ddee7745c10ecae",
       "ownership": "generated"
     },
     {
@@ -904,7 +904,7 @@
     },
     {
       "path": "components/ui/pagination.tsx",
-      "sha256": "89e5cc103b67edda582c116461fa26b4aab771b6aaa41a6569c9bbe47c7a690d",
+      "sha256": "f6b533f9308e447f80ade3e5df779a2a1390841252679bb211e2592808f76f1c",
       "ownership": "generated"
     },
     {
@@ -1534,7 +1534,7 @@
     },
     {
       "path": "lib/r2.ts",
-      "sha256": "47537dc66db63eca5d3d0ac0dd841b51a10b2665bd6aa8c0fd3f4c75fc2c16f3",
+      "sha256": "86c7ce64a23f155ceef2a9971e3f8eb2ee2560ca37e8806491783959380ce043",
       "ownership": "generated"
     },
     {
@@ -1784,7 +1784,7 @@
     },
     {
       "path": "tailwind.config.ts",
-      "sha256": "a91fcd423d58ec851359ecfbe22c0ed10bbb479de9c654ff460fb92261b92c42",
+      "sha256": "f2ecd2b2074d729063c88fbfdf660d0cb31540fc5a426092edf8520364959a40",
       "ownership": "generated"
     },
     {

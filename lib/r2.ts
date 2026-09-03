@@ -56,4 +56,3 @@ export function getR2Path(type: "logo" | "cover", filename: string): string {
 export function getR2PublicUrl(path: string): string {
   return `${r2Config.publicUrl}/${path}`;
 }
-

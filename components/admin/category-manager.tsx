@@ -122,14 +122,14 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
   const moveCategory = (index: number, direction: "up" | "down") => {
     const newCategories = [...categories];
     const targetIndex = direction === "up" ? index - 1 : index + 1;
-    
+
     if (targetIndex < 0 || targetIndex >= newCategories.length) {
       return;
     }
 
     // Swap positions
     [newCategories[index], newCategories[targetIndex]] = [newCategories[targetIndex], newCategories[index]];
-    
+
     setCategories(newCategories);
   };
 
@@ -143,7 +143,7 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
       }));
 
       const result = await updateCategoriesOrder(null, { categories: categoriesWithOrder });
-      
+
       if (result.success) {
         toast.success("Category order saved successfully!");
         router.refresh();

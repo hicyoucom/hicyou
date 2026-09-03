@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error("Error verifying badge:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Failed to verify badge",
         verified: false,
         message: "An error occurred while verifying the badge. Please try again.",

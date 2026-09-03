@@ -68,7 +68,7 @@ export function ColorPicker({
   return (
     <div className="space-y-3">
       <Label htmlFor={id}>{label}</Label>
-      
+
       {/* Color Preview */}
       <div className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
         <div
@@ -117,4 +117,3 @@ export function ColorPicker({
     </div>
   );
 }
-

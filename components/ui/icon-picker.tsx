@@ -141,10 +141,10 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
                   onChange={(e) => handleManualInput(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  输入 Lucide 图标名称。查看所有可用图标: 
-                  <a 
-                    href="https://lucide.dev/icons/" 
-                    target="_blank" 
+                  输入 Lucide 图标名称。查看所有可用图标:
+                  <a
+                    href="https://lucide.dev/icons/"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline ml-1"
                   >
@@ -159,9 +159,9 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
                   <div className="text-sm font-medium mb-3">预览:</div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center h-16 w-16 rounded-lg border-2 bg-background">
-                      <DynamicIcon 
-                        name={manualInput} 
-                        className="h-8 w-8" 
+                      <DynamicIcon
+                        name={manualInput}
+                        className="h-8 w-8"
                         fallback={
                           <div className="text-xs text-muted-foreground text-center">
                             未找到<br/>图标

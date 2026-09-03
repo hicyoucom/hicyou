@@ -118,9 +118,9 @@ export const CategoryFilter = ({ categories }: CategoryFilterProps) => {
             aria-pressed={currentCategory === category.id}
           >
             {category.icon && (
-              <DynamicIcon 
-                name={category.icon} 
-                className="h-3.5 w-3.5 mr-1" 
+              <DynamicIcon
+                name={category.icon}
+                className="h-3.5 w-3.5 mr-1"
                 aria-label={category.name}
               />
             )}
