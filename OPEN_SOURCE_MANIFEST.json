@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-security-candidate-20260903-04",
+  "exportId": "v2-security-candidate-20260903-05",
   "files": [
     {
       "path": ".dockerignore",
@@ -1664,7 +1664,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "6fc4d2f6953169c55aa26948edbf7da1fb02cc52c46eb049436fe3c3839ff4d8",
+      "sha256": "b45f1e906ee25fa23a6670b9872f71486afef6977a0c8f99e4715e5f5ec0028d",
       "ownership": "generated"
     },
     {
@@ -1759,7 +1759,7 @@
     },
     {
       "path": "scripts/check-open-source-boundaries.mjs",
-      "sha256": "d3ad3ffa910ae69500a8bfca36ade6427d14f7f06d1c68c1ba971e9500287ae7",
+      "sha256": "a20c865547b1556afd58fa66ebe190083434f4b74d12792cfa96ef3aed73402d",
       "ownership": "generated"
     },
     {

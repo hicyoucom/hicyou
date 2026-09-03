@@ -6,12 +6,11 @@ import process from "node:process";
 
 import { listFiles, safeRelative, sha256 } from "./public-boundary-lib.mjs";
 
-const rootArgument = process.argv[2] === "--root" && process.argv[3];
-if (!rootArgument || process.argv.length !== 4) {
-  throw new Error("usage: check-open-source-boundaries.mjs --root <directory>");
+if (process.argv.length !== 2) {
+  throw new Error("usage: check-open-source-boundaries.mjs");
 }
 
-const root = path.resolve(rootArgument);
+const root = process.cwd();
 const manifestName = "OPEN_SOURCE_MANIFEST.json";
 const exportId = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const sha256Pattern = /^[0-9a-f]{64}$/;
