@@ -101,6 +101,12 @@ const assetAllowlist = new Set([
   "public/logo.svg",
   "public/ogimage.avif",
 ]);
+const requiredLicenseFiles = new Set([
+  "LICENSE",
+  "NOTICE",
+  "OFL-1.1.txt",
+  "THIRD_PARTY_LICENSES.md",
+]);
 const textExtensions = new Set([
   "",
   ".css",
@@ -126,6 +132,10 @@ const email = /[A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@([A-Z0-9.-]+\.[A-Z]{2,})/gi;
 const findings = [];
 const report = (id, filePath) => findings.push({ id, path: filePath });
 const files = await listFiles(root);
+for (const filePath of requiredLicenseFiles) {
+  if (!files.includes(filePath))
+    report("missing-required-license-file", filePath);
+}
 if (!files.includes(manifestName))
   throw new Error(`${manifestName} is missing`);
 const manifest = JSON.parse(
@@ -229,6 +239,27 @@ const packageJson = JSON.parse(
 );
 if (packageJson.license !== "Apache-2.0")
   report("package-license", "package.json");
+if (files.includes("OFL-1.1.txt")) {
+  const fontLicense = await readFile(path.join(root, "OFL-1.1.txt"), "utf8");
+  if (
+    !fontLicense.includes("Copyright 2024 The Geist Project Authors") ||
+    !fontLicense.includes("SIL OPEN FONT LICENSE Version 1.1")
+  ) {
+    report("invalid-geist-font-license", "OFL-1.1.txt");
+  }
+}
+if (files.includes("THIRD_PARTY_LICENSES.md")) {
+  const thirdPartyLicenses = await readFile(
+    path.join(root, "THIRD_PARTY_LICENSES.md"),
+    "utf8",
+  );
+  if (
+    !thirdPartyLicenses.includes("Geist") ||
+    !thirdPartyLicenses.includes("OFL-1.1.txt")
+  ) {
+    report("missing-geist-license-index", "THIRD_PARTY_LICENSES.md");
+  }
+}
 const environment = await readFile(path.join(root, ".env.example"), "utf8");
 for (const [index, line] of environment.split(/\r?\n/).entries()) {
   const trimmed = line.trim();

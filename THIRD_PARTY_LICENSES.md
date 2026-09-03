@@ -26,9 +26,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## Geist fonts
+
+`app/fonts/GeistVF.woff` and `app/fonts/GeistMonoVF.woff` are from the Geist
+font project by Vercel and the Geist Project Authors. They remain licensed
+under the SIL Open Font License 1.1 and are not relicensed under Apache-2.0.
+The required copyright notice and full license are in [OFL-1.1.txt](OFL-1.1.txt).
+
+## Installed packages and container images
+
 JavaScript packages installed from `package.json` retain their own licenses.
 They are dependencies and are not relicensed by this repository. Run
 `bun pm licenses --prod` against the locked install to review the production
-license inventory. Container publishers should also generate and retain an
-SBOM for the exact image they distribute; the public CI scans that image for
-high/critical vulnerabilities and embedded secrets.
+license inventory.
+
+The locked production dependency graph includes permissive and notice-based
+licenses, the MPL-2.0-licensed `@vercel/analytics` package, the CC-BY-4.0-
+licensed `caniuse-lite` data package, and platform-specific LGPL-3.0-or-later
+`@img/sharp-libvips-*` packages. Anyone distributing a prebuilt container or
+other binary bundle must retain the license files shipped by those packages,
+generate an SBOM for the exact artifact, and review the obligations that apply
+to that distribution.
+The public CI scans source and container artifacts for high/critical
+vulnerabilities, embedded secrets, and filesystem misconfiguration; license
+inventory output is reviewed separately rather than being treated as an
+automatic legal conclusion.

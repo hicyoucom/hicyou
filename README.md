@@ -45,7 +45,7 @@ See [deployment](docs/DEPLOYMENT.md) for production guidance and [the v1 migrati
 
 ## License and attribution
 
-HiCyou contributions in this distribution are provided under the [Apache License 2.0](LICENSE). The project contains code derived from 9d8's MIT-licensed Directory project; its original notice and license are retained in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
+HiCyou contributions in this distribution are provided under the [Apache License 2.0](LICENSE). The project contains code derived from 9d8's MIT-licensed Directory project and bundles Geist fonts under the SIL Open Font License 1.1. Their notices and license boundaries are retained in [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) and [OFL-1.1.txt](OFL-1.1.txt).
 
 If HiCyou helps your project, you are welcome to keep a “Powered by HiCyou” badge and link to <https://hicyou.com>. This attribution is entirely optional and is not a condition of the Apache-2.0 license. See [BRAND.md](BRAND.md) for trademark and badge guidance.
 

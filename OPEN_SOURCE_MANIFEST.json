@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-preview-security-20260903-r3",
+  "exportId": "v2-security-candidate-20260903-04",
   "files": [
     {
       "path": ".dockerignore",
@@ -29,7 +29,7 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "41078bca95c6f29da48322104dff595b57295107eec4b532a34adc3a4a912d9f",
+      "sha256": "c0211ef973b56adb953f79c586424de4d8a58956ef87a12d547d4f97a75d5579",
       "ownership": "generated"
     },
     {
@@ -984,7 +984,7 @@
     },
     {
       "path": "Dockerfile",
-      "sha256": "bca3fe896dc3ca2ae20d45a60a9ae644686670cb4ae1ce0a4c19ab01e11b23d9",
+      "sha256": "a6199b0473ddbe94d69f4b0a85990c502ceaa2fd4e36ce5b4f64a69e77dbba45",
       "ownership": "generated"
     },
     {
@@ -1654,7 +1654,12 @@
     },
     {
       "path": "NOTICE",
-      "sha256": "dab837ba4f205d82e7df7c51b84141f58fa487666352fda54ba4a0f84a4f595b",
+      "sha256": "d530c7cba089cef0f6802b9c4cbb16632f2528c9341c2296af55a5043d53d24d",
+      "ownership": "generated"
+    },
+    {
+      "path": "OFL-1.1.txt",
+      "sha256": "942560b236adfa83745b2c64e5fc09ebaf91cb331751b1157eb92187e5d6e930",
       "ownership": "generated"
     },
     {
@@ -1749,12 +1754,12 @@
     },
     {
       "path": "README.md",
-      "sha256": "a891df4ee8fbd8bae1585a12512188ec48629fea29ae6e4188431f0fc173aac3",
+      "sha256": "9dda0349b68eae4336d463fa401a87c848753b074fa3c4c53287e73f7c4b39dd",
       "ownership": "generated"
     },
     {
       "path": "scripts/check-open-source-boundaries.mjs",
-      "sha256": "821e601100a2a55240459d9f9f845c40bd25d8c7e35f3bbeb5ff3326292efdda",
+      "sha256": "d3ad3ffa910ae69500a8bfca36ade6427d14f7f06d1c68c1ba971e9500287ae7",
       "ownership": "generated"
     },
     {
@@ -1854,7 +1859,7 @@
     },
     {
       "path": "THIRD_PARTY_LICENSES.md",
-      "sha256": "2790f5721afbed989c111656322106bde7d657a18e7655cf5e1b50ee9dfc6baa",
+      "sha256": "7d9c613c68887808a39139c2b129690ed1d7719dcfb720ccdb5d4321acfa8f52",
       "ownership": "generated"
     },
     {
