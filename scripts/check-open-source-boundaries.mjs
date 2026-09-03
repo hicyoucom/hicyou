@@ -98,6 +98,7 @@ const markdownAllowlist = new Set([
   "CHANGELOG.md",
   "CONTRIBUTING.md",
   "README.md",
+  "README.zh-CN.md",
   "SECURITY.md",
   "THIRD_PARTY_LICENSES.md",
   "docs/DEPLOYMENT.md",
@@ -106,6 +107,8 @@ const markdownAllowlist = new Set([
 const assetAllowlist = new Set([
   "app/favicon.ico",
   "app/ogimage.avif",
+  "docs/images/hicyou-home-en.png",
+  "docs/images/hicyou-home-zh.png",
   "public/assets/logos/hicyou.svg",
   "public/badge/featured-dark.svg",
   "public/badge/featured-light.svg",

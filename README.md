@@ -1,10 +1,18 @@
 # HiCyou
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 HiCyou is a self-hosted directory for products and online resources. It combines the public catalog, publisher submissions, moderation tools, translations, APIs, and scheduled operations in one Next.js application.
 
 The public repository contains the reusable HiCyou core, database migrations, synthetic seed data, tests, and deployment examples. It does not include the production data or private deployment configuration used by [hicyou.com](https://hicyou.com).
 
 [Website](https://hicyou.com) · [Deployment guide](docs/DEPLOYMENT.md) · [Migration from v1](docs/MIGRATING_FROM_V1.md) · [Security policy](SECURITY.md)
+
+## Interface preview
+
+![HiCyou directory homepage in English](docs/images/hicyou-home-en.png)
+
+This screenshot shows the hosted [hicyou.com](https://hicyou.com) directory. Production listings and hosted-service configuration are not included in this repository. Third-party names and marks shown in the screenshot belong to their respective owners.
 
 ## What is included
 
