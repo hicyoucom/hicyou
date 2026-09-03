@@ -1,395 +1,103 @@
-[English](https://github.com/hicyoucom/hicyou/README.md) ｜ [简体中文 / Simplified Chinese](https://github.com/hicyoucom/hicyou/README_zh-CN.md)
+# HiCyou
 
-![](/public/logo.svg)
+HiCyou is a self-hosted directory for products and online resources. It combines the public catalog, publisher submissions, moderation tools, translations, APIs, and scheduled operations in one Next.js application.
 
-# HiCyou - AI-powered tools directory platform
+The public repository contains the reusable HiCyou core, database migrations, synthetic seed data, tests, and deployment examples. It does not include the production data or private deployment configuration used by [hicyou.com](https://hicyou.com).
 
-HiCyou is a modern, AI-powered tools directory platform designed to help users discover and submit useful tools and resources. It leverages AI to automatically generate rich content—such as key features, use cases, and FAQs—to simplify the content creation process.
+[Website](https://hicyou.com) · [Deployment guide](docs/DEPLOYMENT.md) · [Migration from v1](docs/MIGRATING_FROM_V1.md) · [Security policy](SECURITY.md)
 
-## ✨ Key Features
+## What is included
 
-- **Zero-cost deployment:** Thanks to PaaS platforms with free tiers, you can achieve fast, stable, and reliable end-to-end deployment with virtually no cost.
-- **AI-powered content generation:** Automatically extract and generate key features, use cases, and FAQs for submitted tools using AI.
-- **User submissions with admin review workflow:** Users can submit tools, and admins can review and publish them.
-- **SEO optimization:** Built with Next.js App Router, featuring dynamic sitemaps and optimized metadata.
-- **Modern UI/UX:** Clean, responsive design built with Tailwind CSS and Shadcn UI.
-- **Secure user authentication:** Full login and authorization system powered by Supabase.
-- **Cloudflare R2 storage:** Efficient image storage for logos and cover images.
-- **Category management:** Organize tools with custom icons and colors.
+| Area              | Capabilities                                                                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Directory         | Product pages, categories, tags, collections, search, related listings, responsive layouts, and light/dark themes                                       |
+| Languages         | English, Simplified Chinese, Japanese, Spanish, Portuguese, German, and French routes with translated product content                                   |
+| Publishing        | URL-first submissions, metadata prefill, accounts, submission status tracking, badge verification, and optional Turnstile protection                    |
+| Operations        | Admin moderation, batch actions, taxonomy management, translation workflows, content-quality review, category enrichment, and automatic collections     |
+| Developer API     | Bearer API tokens, OpenAPI 3.1 documentation, product search/export, keyset pagination, incremental change feeds, usage tracking, and outbound webhooks |
+| Discovery         | Metadata, JSON-LD, sitemap and robots endpoints, Open Graph images, `llms.txt`, and `llms-full.txt`                                                     |
+| Optional services | OpenAI-compatible content workflows, Exa search, Resend email, S3/R2-compatible object storage, OAuth, analytics, and Turnstile                         |
 
-## 🛠️ Tech Stack
+The application treats submitted URLs and webhook destinations as untrusted input. Outbound requests validate public DNS answers, pin the approved address for the connection, revalidate redirects, and apply response and timeout limits. Admin and cron operations enforce server-side authorization, while rate limits and bounded batch sizes reduce automated abuse.
 
-- **Framework**: [Next.js 14](https://nextjs.org/) 
-- **Database**: [PostgreSQL](https://www.postgresql.org/) (via [Supabase](https://supabase.com/))
-- **Auth**: [Supabase Auth](https://supabase.com/auth)
-- **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [Shadcn UI](https://ui.shadcn.com/)
-- **Storage**: [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/)
-- **AI Integration**: OpenAI Completion API
+## Technology
 
-Thanks to Supabase Auth, HiCyou can build and extend a user center with high security and low development cost.
+| Layer                | Current stack                                                                   |
+| -------------------- | ------------------------------------------------------------------------------- |
+| Application          | Next.js 16.3 with the App Router and React 19 Server Components                 |
+| Language             | TypeScript 5.9                                                                  |
+| UI                   | Tailwind CSS 3, Radix primitives, and shadcn-style local components             |
+| Internationalization | next-intl 4                                                                     |
+| Data                 | PostgreSQL 15+ and Drizzle ORM 0.45                                             |
+| Authentication       | Better Auth 1.6 with optional GitHub and Google OAuth                           |
+| Tooling              | Bun 1.4 for installs, tests, and scripts; Node.js 22+ for the standalone server |
+| Deployment           | Next.js standalone output, Docker, and Docker Compose                           |
 
-## 🔌 Hosting Services
+Exact dependency versions are recorded in [`package.json`](package.json) and [`bun.lock`](bun.lock).
 
-### Vercel
+## Run locally
 
-- 100 GB/month free outbound bandwidth
-- 1,000,000 free Edge Requests per month
-- 1,000,000 free Functions invocations per month, roughly 4 hours of CPU and 360 GB·hours of memory
-
-### Cloudflare R2
-
-- 10 GB/month free standard or infrequent-access storage
-- 1,000,000 free Class A (write) operations per month
-- 10,000,000 free Class B (read) operations per month
-- Zero egress fees (you only pay for storage and operations)
-
-### Supabase
-
-- Free 500 MB Postgres database + unlimited API requests
-- Free 5 GB egress + 5 GB cached egress
-- Free Auth: 50,000 MAUs/month, unlimited total users
-- Free Realtime: 200 concurrent connections, 2,000,000 messages/month
-
-## 🚀 Getting Started
-
-### Usage Terms
-
-The HiCyou project can be used for commercial purposes completely free of charge. However, if you use the HiCyou source code to build your own directory, you **must** display the “Powered by Hi Cyou” badge.
-
-<a href="https://hicyou.com" target="_blank" rel="noopener"><img src="https://hicyou.com/badge/powered-light.svg" alt="Powered by Hi Cyou" /></a>
-
-- The badge must be clearly visible on your website (typically in the footer or on an “About” page).
-- The badge must link back to https://hicyou.com.
-- Do not remove, modify, or cover the badge.
-- Commercial use is allowed, as long as attribution is preserved.
-
-### Prerequisites
-
-Before you start, make sure you have the following installed:
-
-- [Node.js](https://nodejs.org/) (v18 or higher)
-- [pnpm](https://pnpm.io/) package manager
-- A [Supabase](https://supabase.com/) project
-- A [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/) bucket
-- An API key for OpenAI or an OpenAI-compatible AI provider (optional)
-
-### Installation
-
-#### 1. Clone the repository
+You need Bun 1.4 and PostgreSQL 15 or newer.
 
 ```bash
-git clone https://github.com/hicyoucom/hicyou
+git clone https://github.com/hicyoucom/hicyou.git
 cd hicyou
-````
-
-#### 2. Install dependencies
-
-Use pnpm to install project dependencies:
-
-```bash
-pnpm install
-```
-
-> **Note**: If you don’t have pnpm installed yet, you can install it with:
->
-> ```bash
-> npm install -g pnpm
-> ```
-
-#### 3. Environment variables
-
-Copy the example environment file:
-
-```bash
+bun install --frozen-lockfile
 cp .env.example .env
 ```
 
-Open the `.env` file and fill in the following configuration:
-
-##### 3.1 Supabase configuration
-
-Log into your [Supabase Dashboard](https://app.supabase.com/) and obtain the following values:
-
-```env
-# Supabase configuration
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-DATABASE_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
-```
-
-* `NEXT_PUBLIC_SUPABASE_URL`: Project Settings → API → Project URL
-* `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Project Settings → API → Project API keys → anon public
-* `SUPABASE_SERVICE_ROLE_KEY`: Project Settings → API → Project API keys → service_role
-* `DATABASE_URL`: Project Settings → Database → Connection string → URI
-
-##### 3.2 AI provider configuration
-
-Configure your AI provider (OpenAI or any compatible service):
-
-```env
-# AI configuration (OpenAI compatible)
-AI_API_KEY=your_api_key
-AI_BASE_URL=https://api.openai.com/v1
-AI_MODEL=gpt-4o-mini
-```
-
-* `AI_API_KEY`: Your OpenAI API key or other compatible provider key.
-* `AI_BASE_URL`: Base API URL (keep default if using OpenAI).
-* `AI_MODEL`: Model name to use.
-
-##### 3.3 Exa Search configuration (optional)
-
-If you want to use Exa Search:
-
-```env
-# Exa Search
-EXASEARCH_API_KEY=your_exa_api_key
-```
-
-##### 3.4 Cloudflare R2 storage configuration
-
-Log into the [Cloudflare Dashboard](https://dash.cloudflare.com/) and configure R2 storage:
-
-```env
-# R2 storage configuration
-R2_ACCOUNT_ID=your_account_id
-R2_ACCESS_KEY_ID=your_access_key_id
-R2_SECRET_ACCESS_KEY=your_secret_access_key
-R2_BUCKET_NAME=your_bucket_name
-R2_PUBLIC_URL=https://your-r2-domain.com
-R2_UPLOAD_DIR=hicyou/studio/uploads 
-R2_LOGO_DIR=logos
-R2_COVER_DIR=covers
-```
-
-* In the Cloudflare Dashboard, go to R2 → “Manage R2 API Tokens” to create an API token.
-* Create a bucket and configure a public access domain.
-
-##### 3.5 Basic site configuration
-
-```env
-# Site URL and basic info
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-NEXT_PUBLIC_SITE_NAME="HiCyou"
-NEXT_PUBLIC_MAIL=contact@hicyou.com
-NEXT_PUBLIC_Blog=https://blog.hicyou.com
-```
-
-##### 3.6 Cloudflare Turnstile configuration (optional)
-
-If you want to use Cloudflare Turnstile:
-
-```env
-# Turnstile configuration
-NEXT_PUBLIC_TURNSTILE_SITE_KEY=your_site_key
-TURNSTILE_SECRET_KEY=your_secret_key
-```
-
-##### 3.7 Admin configuration
-
-⚠️ Only accounts whose email is configured here will have access to the admin panel.
-
-Set admin emails (separate multiple emails with commas):
-
-```env
-# Admin permissions
-ADMIN_EMAILS="admin@example.com,another@example.com"
-```
-
-##### 3.8 Cron job secret
-
-Set a secure secret key for cron jobs:
-
-```env
-# Cron secret (used for /api/cron/publish)
-CRON_SECRET=your_random_secret_string
-```
-
-For example, you can use an OpenSSL command to generate a 32-byte random string.
-
-##### 3.9 Sponsor configuration (optional)
-
-If these are left empty, no sponsor section will be shown.
-
-```env
-# Sponsor configuration
-NEXT_PUBLIC_SPONSOR_IMAGE_URL=https://example.com/sponsor-image.avif
-NEXT_PUBLIC_SPONSOR_LINK=https://sponsor-website.com
-NEXT_PUBLIC_SPONSOR_TEXT=Sponsor name - short description
-```
-
-#### 4. Database setup
-
-Run the database migrations to create the required tables and seed data:
+Set `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_SITE_URL`, and `ADMIN_EMAILS` in `.env`, then initialize the database:
 
 ```bash
-pnpm db:generate
-pnpm db:migrate
-pnpm db:seed
+bun run db:migrate
+bun run db:seed # optional synthetic demo entry
+bun run dev
 ```
 
-> **Note**: The seed data includes default categories and example tools to help you quickly understand the system structure.
+Open <http://localhost:3000> after the server starts. Optional integrations remain disabled or degrade safely when their variables are empty.
 
-#### 5. Start the development server
+For a container-based evaluation:
 
 ```bash
-pnpm dev
+cp .env.example .env
+docker compose up --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
+Replace every `replace-me` value before exposing an instance outside your machine. Read the [deployment guide](docs/DEPLOYMENT.md) for reverse-proxy, egress-control, migration, and production-secret guidance.
 
-## 📖 Usage Guide
+## API and automation
 
-### User Features
+The read-only v1 API is documented at `/api/v1/docs` and exposed as OpenAPI JSON at `/api/v1/openapi`. It includes:
 
-#### Submit a tool
+- Product listing, detail, search, category, and tag endpoints
+- Streaming NDJSON export
+- Incremental change feeds with upserts and deletion tombstones
+- Keyset cursors, rate-limit responses, and selectable translated fields
 
-1. Visit the site and click the “Submit tool” button.
-2. Fill in the basic information for the tool:
+API access uses tokens created in Hi Studio. Scheduled publishing, translation, webhook delivery, log pruning, and collection generation use authenticated, bounded cron routes.
 
-   * URL (required)
-   * Name
-   * Description
-   * Select category
-   * Upload logo and cover image
-3. After submission, the tool will enter the review queue.
-4. AI will automatically analyze the tool and generate:
-
-   * Key features
-   * Use cases
-   * Frequently asked questions
-
-#### Browse and search tools
-
-* Browse tools by category.
-* Use the search feature to find specific tools.
-* View detailed tool pages, including AI-generated content.
-
-#### Bookmark tools
-
-* After logging in, you can bookmark your favorite tools.
-* View all your bookmarked tools in your profile.
-
-### Admin Features
-
-#### Review submissions
-
-1. Log in with an admin account (email must be included in the `ADMIN_EMAILS` configuration).
-2. Open the admin panel.
-3. View pending submissions.
-4. Approve or reject submissions.
-5. Once approved, the tool will be publicly visible on the site.
-
-#### Manage categories
-
-* Create, edit, or delete categories.
-* Set icons and colors for categories.
-* Adjust the display order of categories.
-
-#### Content management
-
-* Edit information for published tools.
-* Manage user-submitted content.
-* View site statistics.
-
-## 📜 Available Scripts
+## Development checks
 
 ```bash
-# Development
-pnpm dev                # Start the development server
-
-# Build and deploy
-pnpm build              # Build for production
-pnpm start              # Start the production server
-
-# Code quality
-pnpm lint               # Run ESLint
-
-# Database management
-pnpm db:generate        # Generate Drizzle migration files from the schema
-pnpm db:migrate         # Apply database migrations
-pnpm db:studio          # Open Drizzle Studio to inspect/manage the database
-pnpm db:seed            # Seed the database with initial data
-
-# Cloudflare Pages deployment
-pnpm pages:build        # Build for Cloudflare Pages
-pnpm preview            # Preview the Cloudflare Pages build locally
-pnpm deploy             # Deploy to Cloudflare Pages
-
-# Cron jobs
-pnpm cron:publish       # Manually trigger the publish cron job
+bun run open-source:check
+bun run lint
+bun run typecheck
+bun test
+bun run build
 ```
 
-## 🗄️ Database Structure
+CI repeats database migrations to verify idempotence, runs unit and PostgreSQL integration tests, builds the standalone application and container, and scans source, Git history, dependencies, configuration, and the image for secrets and high-severity vulnerabilities.
 
-### Main Tables
+## Project boundaries
 
-* **profiles**: User profile information
-* **categories**: Tool categories
-* **bookmarks**: Published tools
-* **submissions**: Pending submissions
+The repository ships synthetic seed content only. hicyou.com production records, partner configuration, credentials, internal operating documents, deployment workflows, monitoring, backups, and private Git history remain outside this distribution.
 
-For detailed schema documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
+If you are upgrading the original v1 directory, read [MIGRATING_FROM_V1.md](docs/MIGRATING_FROM_V1.md) before changing the database.
 
-## 🔧 FAQ
+## License, brand, and contributions
 
-### How do I switch AI providers?
+HiCyou code in this distribution is licensed under [Apache-2.0](LICENSE). Code derived from 9d8's Directory project remains covered by its MIT notice, and the bundled Geist fonts use the SIL Open Font License 1.1. See [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md), [NOTICE](NOTICE), and [OFL-1.1.txt](OFL-1.1.txt) for the complete boundaries.
 
-Update the AI configuration in `.env`:
+The HiCyou name and logo are project marks, not part of the Apache patent or trademark grant. A "Powered by HiCyou" badge is welcome but entirely optional. See [BRAND.md](BRAND.md) for permitted brand use.
 
-```env
-# Use another OpenAI-compatible provider
-AI_API_KEY=your_api_key
-AI_BASE_URL=https://api.your-provider.com/v1
-AI_MODEL=your-model-name
-```
-
-### How do I add a new admin?
-
-Add the new email address to `ADMIN_EMAILS` in `.env`:
-
-```env
-ADMIN_EMAILS="admin1@example.com,admin2@example.com,new-admin@example.com"
-```
-
-### What if database migration fails?
-
-1. Check whether `DATABASE_URL` is configured correctly.
-2. Make sure the Supabase database is accessible.
-3. Inspect the migration logs for error messages.
-4. If needed, you can manually run the migration SQL in the Supabase Dashboard’s SQL Editor.
-
-### How do I customize the site’s styles?
-
-* Modify `tailwind.config.ts` to adjust Tailwind configuration.
-* Edit `app/globals.css` to change global styles.
-* Update components under the `components/` directory to customize specific UI parts.
-
-## 🚀 Deployment Guide
-
-### Deploying to Vercel (recommended)
-
-1. Push your code to GitHub.
-2. Import the project in [Vercel](https://vercel.com).
-3. Configure environment variables (same as in `.env`).
-4. Click deploy.
-
-### 📝 Contributing
-
-Contributions are welcome! Please follow these steps when contributing:
-
-*(Fill in your contribution guidelines here.)*
-
-## 💬 Support & Feedback
-
-If you have questions or suggestions, you can:
-
-* Open an [Issue](https://github.com/your-repo/issues)
-* Send an email to: [contact@hicyou.com](mailto:contact@hicyou.com)
-* Visit our blog: [https://blog.hicyou.com](https://blog.hicyou.com)
-
----
-
-Made with ❤️ and AI
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Report security issues through the private process in [SECURITY.md](SECURITY.md), not a public issue.

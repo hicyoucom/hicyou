@@ -37,6 +37,23 @@ import { toast } from "sonner";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { DynamicIcon } from "@/lib/icon-utils";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const CATEGORY_GROUP_OPTIONS = [
+  ["ai", "AI"],
+  ["build", "Build"],
+  ["work", "Work"],
+  ["growth", "Growth"],
+  ["life", "Life & Industry"],
+  ["other", "Other"],
+] as const;
 
 interface CategoryManagerProps {
   categories: Category[];
@@ -60,6 +77,9 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
 
   // Update local categories when initial data changes
   useEffect(() => {
+    // Server refreshes are the source of truth; local state only carries the
+    // temporary drag/reorder draft between saves.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCategories([...initialCategories].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)));
   }, [initialCategories]);
 
@@ -70,6 +90,8 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
       slug: formData.get("slug") as string,
       color: formData.get("color") as string,
       icon: formData.get("icon") as string,
+      groupKey: formData.get("groupKey") as string,
+      status: formData.get("status") as string,
     };
     return createCategory(null, payload);
   };
@@ -82,6 +104,8 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
       slug: formData.get("slug") as string,
       color: formData.get("color") as string,
       icon: formData.get("icon") as string,
+      groupKey: formData.get("groupKey") as string,
+      status: formData.get("status") as string,
     };
     return updateCategory(null, payload);
   };
@@ -98,14 +122,14 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
   const moveCategory = (index: number, direction: "up" | "down") => {
     const newCategories = [...categories];
     const targetIndex = direction === "up" ? index - 1 : index + 1;
-    
+
     if (targetIndex < 0 || targetIndex >= newCategories.length) {
       return;
     }
 
     // Swap positions
     [newCategories[index], newCategories[targetIndex]] = [newCategories[targetIndex], newCategories[index]];
-    
+
     setCategories(newCategories);
   };
 
@@ -119,7 +143,7 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
       }));
 
       const result = await updateCategoriesOrder(null, { categories: categoriesWithOrder });
-      
+
       if (result.success) {
         toast.success("Category order saved successfully!");
         router.refresh();
@@ -208,6 +232,30 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
                 <Label htmlFor="description">Description</Label>
                 <Textarea id="description" name="description" />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Group</Label>
+                  <Select name="groupKey" defaultValue="work">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_GROUP_OPTIONS.map(([value, label]) => (
+                        <SelectItem key={value} value={value}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select name="status" defaultValue="draft">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="archived">Archived</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <ColorPicker
                 value={createColor}
                 onValueChange={setCreateColor}
@@ -236,6 +284,8 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
             <TableRow>
               <TableHead className="w-[100px]">Order</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Group</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Color</TableHead>
               <TableHead>Icon</TableHead>
@@ -268,6 +318,12 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">{category.name}</TableCell>
+                <TableCell className="capitalize">{category.groupKey}</TableCell>
+                <TableCell>
+                  <Badge variant={category.status === "active" ? "default" : "secondary"}>
+                    {category.status}
+                  </Badge>
+                </TableCell>
                 <TableCell>{category.description}</TableCell>
                 <TableCell>
                   {category.color && (
@@ -369,6 +425,38 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
                 defaultValue={selectedCategory?.description || ""}
               />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Group</Label>
+                <Select
+                  key={`group-${selectedCategory?.id}`}
+                  name="groupKey"
+                  defaultValue={selectedCategory?.groupKey ?? "work"}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {CATEGORY_GROUP_OPTIONS.map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  key={`status-${selectedCategory?.id}`}
+                  name="status"
+                  defaultValue={selectedCategory?.status ?? "draft"}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <ColorPicker
               value={editColor}
               onValueChange={setEditColor}
@@ -394,10 +482,10 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Category</DialogTitle>
+            <DialogTitle>Archive Category</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this category? This action cannot
-              be undone.
+              Archive this category? Existing assignments remain intact, but
+              it will disappear from public navigation and submission forms.
             </DialogDescription>
           </DialogHeader>
           <form action={deleteAction}>
@@ -411,7 +499,7 @@ export function CategoryManager({ categories: initialCategories }: CategoryManag
                 Cancel
               </Button>
               <Button type="submit" variant="destructive">
-                Delete
+                Archive
               </Button>
             </DialogFooter>
           </form>

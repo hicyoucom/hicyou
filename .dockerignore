@@ -1,0 +1,15 @@
+.git
+.github
+.next
+node_modules
+coverage
+.env*
+!.env.example
+*.db
+*.dump
+*.log
+*.pem
+*.sql.bak
+.DS_Store
+.idea
+.vscode

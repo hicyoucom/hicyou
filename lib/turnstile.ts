@@ -1,9 +1,23 @@
+import { logger } from "@/lib/logger";
 /**
  * Cloudflare Turnstile verification utilities
  */
 
-const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
+// Cloudflare's documented test credentials accept any hostname, which keeps
+// localhost/LAN previews usable without weakening production verification.
+const TURNSTILE_SECRET =
+  process.env.NODE_ENV === "development"
+    ? "1x0000000000000000000000000000000AA"
+    : process.env.TURNSTILE_SECRET_KEY;
 const TURNSTILE_ENABLED = !!TURNSTILE_SECRET;
+
+export function isTurnstileRequired(
+  raw = process.env.TURNSTILE_REQUIRED,
+): boolean {
+  return !["0", "false", "off", "no"].includes(
+    raw?.trim().toLowerCase() ?? "true",
+  );
+}
 
 export function isTurnstileEnabled(): boolean {
   return TURNSTILE_ENABLED;
@@ -26,9 +40,15 @@ export async function verifyTurnstile(
   token: string,
   ip?: string
 ): Promise<{ success: boolean; error?: string }> {
-  // If Turnstile is not configured, skip verification
+  // Local development and an explicit production opt-out may skip the
+  // service. Production otherwise fails closed; the container preflight
+  // catches this configuration error before the application starts.
   if (!TURNSTILE_ENABLED) {
-    console.log("Turnstile not configured, skipping verification");
+    if (process.env.NODE_ENV === "production" && isTurnstileRequired()) {
+      logger.error("Turnstile is not configured in production");
+      return { success: false, error: "Verification service is unavailable" };
+    }
+    logger.info("Turnstile not configured, skipping verification");
     return { success: true };
   }
 
@@ -58,7 +78,7 @@ export async function verifyTurnstile(
     const data: TurnstileVerifyResponse = await response.json();
 
     if (!data.success) {
-      console.error("Turnstile verification failed:", data["error-codes"]);
+      logger.error("Turnstile verification failed:", data["error-codes"]);
       return {
         success: false,
         error: "Verification failed. Please try again.",
@@ -67,11 +87,10 @@ export async function verifyTurnstile(
 
     return { success: true };
   } catch (error) {
-    console.error("Error verifying Turnstile:", error);
+    logger.error("Error verifying Turnstile:", error);
     return {
       success: false,
       error: "Verification error. Please try again.",
     };
   }
 }
-

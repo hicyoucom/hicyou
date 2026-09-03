@@ -28,6 +28,7 @@ export function SearchBar() {
     <div className="relative mx-auto max-w-2xl">
       <div className="relative">
         <input
+          key={searchParams.get("search") ?? ""}
           type="text"
           defaultValue={searchParams.get("search") ?? ""}
           onChange={(e) => handleSearch(e.target.value)}

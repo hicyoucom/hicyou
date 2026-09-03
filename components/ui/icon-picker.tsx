@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,17 +29,6 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [manualInput, setManualInput] = useState(value || "");
-  const hiddenInputRef = useRef<HTMLInputElement>(null);
-
-  // Sync hidden input value with value prop
-  useEffect(() => {
-    if (hiddenInputRef.current) {
-      hiddenInputRef.current.value = value || "";
-    }
-    if (value) {
-      setManualInput(value);
-    }
-  }, [value]);
 
   const filteredIcons = POPULAR_ICONS.filter((icon) =>
     icon.toLowerCase().includes(searchTerm.toLowerCase())
@@ -48,10 +37,6 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
   const handleSelect = (iconName: string) => {
     onValueChange(iconName);
     setManualInput(iconName);
-    // Update hidden input immediately
-    if (hiddenInputRef.current) {
-      hiddenInputRef.current.value = iconName;
-    }
     setOpen(false);
     setSearchTerm("");
   };
@@ -59,15 +44,18 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
   const handleManualInput = (inputValue: string) => {
     setManualInput(inputValue);
     onValueChange(inputValue);
-    if (hiddenInputRef.current) {
-      hiddenInputRef.current.value = inputValue;
-    }
   };
 
   return (
     <div className="space-y-2">
       <Label htmlFor="icon-picker">{label}</Label>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (nextOpen) setManualInput(value || "");
+        }}
+      >
         <DialogTrigger asChild>
           <Button
             type="button"
@@ -153,10 +141,10 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
                   onChange={(e) => handleManualInput(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  输入 Lucide 图标名称。查看所有可用图标: 
-                  <a 
-                    href="https://lucide.dev/icons/" 
-                    target="_blank" 
+                  输入 Lucide 图标名称。查看所有可用图标:
+                  <a
+                    href="https://lucide.dev/icons/"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary hover:underline ml-1"
                   >
@@ -171,9 +159,9 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
                   <div className="text-sm font-medium mb-3">预览:</div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center h-16 w-16 rounded-lg border-2 bg-background">
-                      <DynamicIcon 
-                        name={manualInput} 
-                        className="h-8 w-8" 
+                      <DynamicIcon
+                        name={manualInput}
+                        className="h-8 w-8"
                         fallback={
                           <div className="text-xs text-muted-foreground text-center">
                             未找到<br/>图标
@@ -222,9 +210,6 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
                   onClick={() => {
                     onValueChange("");
                     setManualInput("");
-                    if (hiddenInputRef.current) {
-                      hiddenInputRef.current.value = "";
-                    }
                   }}
                 >
                   清除
@@ -234,8 +219,7 @@ export function IconPicker({ value, onValueChange, label = "Icon", name = "icon"
           </Tabs>
         </DialogContent>
       </Dialog>
-      <input type="hidden" ref={hiddenInputRef} name={name} id={id} value={value || ""} />
+      <input type="hidden" name={name} id={id} value={value || ""} />
     </div>
   );
 }
-

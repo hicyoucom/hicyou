@@ -1,115 +1,192 @@
 import { NextResponse } from "next/server";
-import { load } from "cheerio";
+import { getSession } from "@/lib/get-session";
+import { logger } from "@/lib/logger";
+import { canUseManualMetadataEntry } from "@/lib/fetch-metadata";
+import { fetchSubmissionMetadata } from "@/lib/submission-metadata-fetch";
+import { getSubmissionUrlAvailability } from "@/lib/data/submission-url-availability";
+import { normalizeHttpUrl, UrlValidationError } from "@/lib/url-validator";
+import { checkActionRateLimit } from "@/lib/rate-limit";
+import {
+  createManualSubmissionMetadata,
+  type SubmissionMetadata,
+} from "@/lib/submission-prefill";
 
-// 强制动态渲染，因为使用了 request.url
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 30;
 
+const MAX_FETCHES_PER_HOUR = 20;
+const FETCH_WINDOW_MS = 60 * 60 * 1000;
+const NO_STORE_HEADERS = { "Cache-Control": "private, no-store" };
+
+function duplicateResponse(
+  availability: "already_submitted" | "already_listed",
+) {
+  return NextResponse.json(
+    {
+      error:
+        availability === "already_listed"
+          ? "This website already exists in our directory"
+          : "This website has already been submitted",
+      availability,
+    },
+    { status: 409, headers: NO_STORE_HEADERS },
+  );
+}
+
+/**
+ * URL-first submission preflight. It is intentionally authenticated: this
+ * route causes server-side network requests and is only needed by /submit.
+ */
 export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const url = searchParams.get("url");
-
-    if (!url) {
-      return NextResponse.json({ error: "URL is required" }, { status: 400 });
-    }
-
-    // Validate and normalize URL
-    let validUrl: URL;
-    try {
-      validUrl = new URL(url);
-      // Add https if no protocol is specified
-      if (!validUrl.protocol || validUrl.protocol === ":") {
-        validUrl = new URL(`https://${url}`);
-      }
-    } catch (error) {
-      console.error("Invalid URL format:", error);
-      return NextResponse.json(
-        { error: "Invalid URL format" },
-        { status: 400 },
-      );
-    }
-
-    console.log("Fetching metadata for URL:", validUrl.toString());
-
-    const response = await fetch(validUrl.toString(), {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; DirectoryBot/1.0; +http://localhost)",
-      },
-    });
-
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: `Failed to fetch URL: ${response.statusText}` },
-        { status: response.status },
-      );
-    }
-
-    const html = await response.text();
-    const $ = load(html);
-
-    // Get favicon
-    let faviconUrl =
-      $('link[rel="icon"]').attr("href") ||
-      $('link[rel="shortcut icon"]').attr("href") ||
-      $('link[rel="apple-touch-icon"]').attr("href") ||
-      "/favicon.ico"; // Default fallback
-
-    // If favicon is relative, make it absolute
-    if (faviconUrl && !faviconUrl.startsWith("http")) {
-      try {
-        faviconUrl = new URL(faviconUrl, validUrl.origin).toString();
-      } catch (e) {
-        console.warn("Failed to parse favicon URL:", e);
-        faviconUrl = "/favicon.ico";
-      }
-    }
-
-    // Get Open Graph image
-    let ogImage =
-      $('meta[property="og:image"]').attr("content") ||
-      $('meta[name="twitter:image"]').attr("content");
-
-    // Make ogImage URL absolute if it's relative
-    if (ogImage && !ogImage.startsWith("http")) {
-      try {
-        ogImage = new URL(ogImage, validUrl.origin).toString();
-      } catch (e) {
-        console.warn("Failed to parse ogImage URL:", e);
-        ogImage = "";
-      }
-    }
-
-    // Get title and description
-    const title =
-      $('meta[property="og:title"]').attr("content") ||
-      $("title").text().trim() ||
-      validUrl.hostname;
-
-    const description =
-      $('meta[property="og:description"]').attr("content") ||
-      $('meta[name="description"]').attr("content") ||
-      "";
-
-    const metadata = {
-      favicon: faviconUrl,
-      ogImage,
-      title,
-      description,
-      url: validUrl.toString(),
-    };
-
-    console.log("Generated metadata:", metadata);
-
-    return NextResponse.json(metadata);
-  } catch (error) {
-    const statusCode = error instanceof Error ? 500 : (error as { statusCode?: number }).statusCode || 500;
-    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-    console.error("Error fetching metadata:", errorMessage);
+  const session = await getSession();
+  if (!session?.user) {
     return NextResponse.json(
-      { error: `Failed to fetch or parse metadata: ${errorMessage}` },
-      { status: statusCode },
+      { error: "You must be logged in to prepare a submission" },
+      { status: 401, headers: NO_STORE_HEADERS },
     );
   }
+
+  const rateLimit = await checkActionRateLimit(
+    "metadata-fetch",
+    session.user.id,
+    MAX_FETCHES_PER_HOUR,
+    FETCH_WINDOW_MS,
+  );
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error:
+          "Too many requests. Maximum " +
+          MAX_FETCHES_PER_HOUR +
+          " metadata fetches per hour.",
+      },
+      { status: 429, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  const rawUrl = new URL(request.url).searchParams.get("url");
+  if (!rawUrl) {
+    return NextResponse.json(
+      { error: "URL is required" },
+      { status: 400, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  let requestedUrl: string;
+  try {
+    requestedUrl = normalizeHttpUrl(rawUrl);
+  } catch (error) {
+    if (error instanceof UrlValidationError) {
+      return NextResponse.json(
+        { error: "Enter a valid HTTP or HTTPS website URL" },
+        { status: 400, headers: NO_STORE_HEADERS },
+      );
+    }
+    throw error;
+  }
+
+  try {
+    const initialAvailability =
+      await getSubmissionUrlAvailability(requestedUrl);
+    if (initialAvailability !== "available") {
+      return duplicateResponse(initialAvailability);
+    }
+  } catch (error) {
+    logger.error("Submission URL availability check failed:", error);
+    return NextResponse.json(
+      { error: "We could not check this URL right now. Please try again." },
+      { status: 503, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  let metadata: SubmissionMetadata;
+  try {
+    metadata = {
+      ...(await fetchSubmissionMetadata(requestedUrl)),
+      metadataSource: "fetched",
+    };
+  } catch (error) {
+    if (error instanceof UrlValidationError) {
+      logger.warn(
+        "Submission metadata preflight rejected an unsafe URL",
+        error,
+      );
+      return NextResponse.json(
+        { error: "This URL cannot be fetched safely" },
+        { status: 400, headers: NO_STORE_HEADERS },
+      );
+    }
+
+    if (canUseManualMetadataEntry(error)) {
+      logger.warn(
+        "Submission metadata fetch was rejected upstream; allowing manual entry",
+        error,
+      );
+      return NextResponse.json(
+        {
+          ...createManualSubmissionMetadata(requestedUrl),
+          availability: "available",
+        },
+        { headers: NO_STORE_HEADERS },
+      );
+    }
+
+    logger.error("Submission metadata preflight failed:", error);
+
+    return NextResponse.json(
+      {
+        error:
+          "We could not fetch website details. Check the URL and try again.",
+      },
+      { status: 502, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  let finalUrl: string;
+  try {
+    finalUrl = normalizeHttpUrl(metadata.url);
+  } catch (error) {
+    logger.error("Metadata fetch returned an invalid canonical URL:", error);
+    return NextResponse.json(
+      {
+        error:
+          "We could not fetch website details. Check the URL and try again.",
+      },
+      { status: 502, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  if (finalUrl === requestedUrl) {
+    return NextResponse.json(
+      {
+        ...metadata,
+        url: finalUrl,
+        availability: "available",
+      },
+      { headers: NO_STORE_HEADERS },
+    );
+  }
+
+  try {
+    const finalAvailability = await getSubmissionUrlAvailability(finalUrl);
+    if (finalAvailability !== "available") {
+      return duplicateResponse(finalAvailability);
+    }
+  } catch (error) {
+    logger.error("Redirected submission URL availability check failed:", error);
+    return NextResponse.json(
+      { error: "We could not check this URL right now. Please try again." },
+      { status: 503, headers: NO_STORE_HEADERS },
+    );
+  }
+
+  return NextResponse.json(
+    {
+      ...metadata,
+      url: finalUrl,
+      availability: "available",
+    },
+    { headers: NO_STORE_HEADERS },
+  );
 }

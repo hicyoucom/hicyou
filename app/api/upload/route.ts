@@ -1,3 +1,4 @@
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { r2Client, r2Config, getR2Path, getR2PublicUrl, isR2Configured } from "@/lib/r2";
@@ -6,59 +7,43 @@ import {
   validateImage,
   generateUniqueFilename,
 } from "@/lib/image-processor";
-import { getClientIp } from "@/lib/rate-limit";
+import { getClientIp, checkActionRateLimit } from "@/lib/rate-limit";
+import { getSession } from "@/lib/get-session";
 
 // 强制动态渲染
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Simple in-memory rate limiting for uploads
-// Key: IP address, Value: { count: number, resetTime: number }
-const uploadRateLimit = new Map<string, { count: number; resetTime: number }>();
-const MAX_UPLOADS_PER_HOUR = 10; // 每小时最多10次上传
-const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
-
-function checkUploadRateLimit(ip: string): { allowed: boolean; error?: string } {
-  const now = Date.now();
-  const record = uploadRateLimit.get(ip);
-
-  // Clean up old records periodically
-  if (uploadRateLimit.size > 1000) {
-    const keysToDelete: string[] = [];
-    uploadRateLimit.forEach((value, key) => {
-      if (now > value.resetTime) {
-        keysToDelete.push(key);
-      }
-    });
-    keysToDelete.forEach(key => uploadRateLimit.delete(key));
-  }
-
-  if (!record || now > record.resetTime) {
-    // New window
-    uploadRateLimit.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return { allowed: true };
-  }
-
-  if (record.count >= MAX_UPLOADS_PER_HOUR) {
-    return {
-      allowed: false,
-      error: `Too many upload attempts. Maximum ${MAX_UPLOADS_PER_HOUR} uploads per hour. Please try again later.`,
-    };
-  }
-
-  // Increment count
-  record.count++;
-  return { allowed: true };
-}
+const MAX_UPLOADS_PER_HOUR = 10;
+const UPLOAD_WINDOW_MS = 60 * 60 * 1000;
+const MAX_FILE_BYTES = 1 * 1024 * 1024;
+// Multipart framing adds a small amount of overhead. Reject obviously large
+// bodies before request.formData() asks the runtime to buffer and parse them.
+const MAX_UPLOAD_BODY_BYTES = 2 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   try {
-    // Check rate limit first (防止恶意上传)
+    // Uploads write directly to persistent object storage. Require a verified
+    // application session instead of relying on a client-only submit form.
+    const session = await getSession();
+    const userId = session?.user?.id;
+    if (!userId) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    // Rate-limit per account and IP (DB-backed; works across serverless
+    // instances). Including the account prevents users behind one NAT from
+    // consuming each other's quota.
     const clientIp = getClientIp(request);
-    const rateLimitCheck = checkUploadRateLimit(clientIp);
-    if (!rateLimitCheck.allowed) {
+    const rl = await checkActionRateLimit(
+      "upload",
+      `${userId}:${clientIp}`,
+      MAX_UPLOADS_PER_HOUR,
+      UPLOAD_WINDOW_MS,
+    );
+    if (!rl.allowed) {
       return NextResponse.json(
-        { error: rateLimitCheck.error },
+        { error: `Too many upload attempts. Maximum ${MAX_UPLOADS_PER_HOUR} uploads per hour. Please try again later.` },
         { status: 429 }
       );
     }
@@ -71,21 +56,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const contentLength = Number(request.headers.get("content-length"));
+    if (
+      Number.isFinite(contentLength) &&
+      contentLength > MAX_UPLOAD_BODY_BYTES
+    ) {
+      return NextResponse.json(
+        { error: "Upload request too large. Maximum file size is 1MB" },
+        { status: 413 },
+      );
+    }
+
     // Get form data
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get("file");
     const type = formData.get("type") as "logo" | "cover";
 
-    // Note: We don't verify Turnstile token here because:
-    // 1. Turnstile tokens can only be used once
-    // 2. Users need to upload multiple images (logo + cover)
-    // 3. The main form submission will verify the token
-    // 4. We use IP-based rate limiting (10 uploads/hour) to prevent abuse
-    // This is safe because image uploads are temporary and will only be linked
-    // to submissions after the main form passes Turnstile verification
-
     // Validate inputs
-    if (!file) {
+    if (!file || typeof file === "string") {
       return NextResponse.json(
         { error: "No file provided" },
         { status: 400 }
@@ -99,45 +87,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Validate file type (MIME type check)
+    // Validate file type (MIME type check). SVG is rejected because it can
+    // contain inline JavaScript (stored XSS) when served as image/svg+xml.
     const validTypes = [
       "image/jpeg",
       "image/jpg",
       "image/png",
       "image/webp",
       "image/gif",
-      "image/svg+xml",
-      "image/avif",
     ];
     if (!validTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: "Invalid image file. Supported formats: JPG, PNG, WebP, GIF, SVG, AVIF. Max size: 1MB" },
+        { error: "Invalid image file. Supported formats: JPG, PNG, WebP, GIF. Max size: 1MB" },
         { status: 400 }
       );
     }
 
-    // Validate file size (max 1MB)
-    if (buffer.length > 1 * 1024 * 1024) {
+    // Validate the browser-provided size before allocating another full copy
+    // for image decoding. The decoded buffer is checked again below.
+    if (file.size > MAX_FILE_BYTES) {
       return NextResponse.json(
         { error: "File too large. Maximum size is 1MB" },
-        { status: 400 }
+        { status: 413 }
       );
     }
 
-    // For AVIF files, skip Sharp validation as it may not recognize the format
-    // Sharp will handle it during processing
-    if (file.type !== "image/avif") {
-      const isValid = await validateImage(buffer);
-      if (!isValid) {
-        return NextResponse.json(
-          { error: "Invalid image file. Supported formats: JPG, PNG, WebP, GIF, SVG, AVIF. Max size: 1MB" },
-          { status: 400 }
-        );
-      }
+    // Convert file to buffer only after the inexpensive type/size checks.
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    if (buffer.length > MAX_FILE_BYTES) {
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 1MB" },
+        { status: 413 },
+      );
+    }
+
+    const isValid = await validateImage(buffer);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: "Invalid image file. Supported formats: JPG, PNG, WebP, GIF. Max size: 1MB" },
+        { status: 400 }
+      );
     }
 
     // Process image to AVIF
@@ -174,20 +164,21 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error("Upload error:", error);
+    logger.error("Upload error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to upload image" },
+      { error: "Failed to upload image" },
       { status: 500 }
     );
   }
 }
 
-// Optional: Add GET endpoint to check R2 configuration status
 export async function GET() {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
   return NextResponse.json({
     configured: isR2Configured,
-    bucketName: isR2Configured ? r2Config.bucketName : null,
-    publicUrl: isR2Configured ? r2Config.publicUrl : null,
   });
 }
-

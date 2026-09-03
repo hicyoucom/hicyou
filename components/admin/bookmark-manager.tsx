@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,18 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -43,49 +32,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Upload, Loader2, Trash2, FileJson } from "lucide-react";
-import { ImageUpload } from "@/components/admin/image-upload";
 import { Pagination } from "@/components/ui/pagination";
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  color: string | null;
-  icon: string | null;
-  sortOrder: number;
-  createdAt: Date;
-  updatedAt: Date | null;
-}
-
-interface Bookmark {
-  id: number;
-  title: string;
-  slug: string;
-  url: string;
-  description: string | null;
-  overview: string | null;
-  whyStartups: string | null;
-  alternatives: string | null;
-  pricingType: string | null;
-  search_results: string | null;
-  favicon: string | null;
-  ogImage: string | null;
-  categoryId: number | null;
-  isFavorite: boolean;
-  isArchived: boolean;
-  isDofollow: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  notes: string | null;
-  keyFeatures: any;
-  useCases: any;
-  faqs: any;
-}
-
-interface BookmarkWithCategory extends Bookmark {
-  category: Category | null;
-}
+import { EditBookmarkSheet } from "./bookmark-manager-parts/edit-sheet";
+import { BulkUploadSheet } from "./bookmark-manager-parts/bulk-upload-sheet";
+import { JsonImportSheet } from "./bookmark-manager-parts/json-import-sheet";
+import type { Category, BookmarkWithCategory, BookmarkFormData } from "./bookmark-manager-parts/types";
 
 interface BookmarkManagerProps {
   categories: Category[];
@@ -142,9 +93,13 @@ export function BookmarkManager({
     // Category filter
     if (selectedCategoryFilter !== "all") {
       if (selectedCategoryFilter === "none") {
-        if (bookmark.categoryId !== null) return false;
+        if (bookmark.categories.length > 0) return false;
       } else {
-        if (bookmark.categoryId?.toString() !== selectedCategoryFilter) return false;
+        if (
+          !bookmark.categories.some(
+            (category) => category.id.toString() === selectedCategoryFilter,
+          )
+        ) return false;
       }
     }
 
@@ -156,7 +111,9 @@ export function BookmarkManager({
         bookmark.url.toLowerCase().includes(searchLower) ||
         bookmark.description?.toLowerCase().includes(searchLower) ||
         bookmark.overview?.toLowerCase().includes(searchLower) ||
-        bookmark.category?.name.toLowerCase().includes(searchLower)
+        bookmark.categories.some((category) =>
+          category.name.toLowerCase().includes(searchLower),
+        )
       );
     }
 
@@ -173,40 +130,11 @@ export function BookmarkManager({
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
+    setSelectedBookmarks(new Set());
   };
 
-  // Reset to first page when search or filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, selectedCategoryFilter]);
-
-  useEffect(() => {
-    if (bulkUploadState?.success) {
-      if (
-        bulkUploadState.progress?.current === bulkUploadState.progress?.total
-      ) {
-        toast.success(
-          bulkUploadState.message || "Bookmarks uploaded successfully",
-        );
-        setIsUploading(false);
-        setIsSheetOpen(false);
-        setBulkUploadState(null);
-      } else if (bulkUploadState.progress?.lastAdded) {
-        toast.success(`Added: ${bulkUploadState.progress.lastAdded}`);
-      }
-    } else if (bulkUploadState?.error) {
-      toast.error(bulkUploadState.error);
-      if (
-        !bulkUploadState.progress ||
-        bulkUploadState.progress.current === bulkUploadState.progress.total
-      ) {
-        setIsUploading(false);
-      }
-    }
-  }, [bulkUploadState]);
-
   // Form state management
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BookmarkFormData>({
     title: "",
     slug: "",
     url: "",
@@ -214,11 +142,12 @@ export function BookmarkManager({
     overview: "",
     whyStartups: "",
     alternatives: "",
-    pricingType: "Paid",
+
     search_results: "",
     favicon: "",
     ogImage: "",
     categoryId: "none",
+    categoryIds: [],
     isFavorite: false,
     isArchived: false,
     isDofollow: false,
@@ -226,6 +155,29 @@ export function BookmarkManager({
     useCases: "",
     faqs: "",
   });
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      slug: "",
+      url: "",
+      description: "",
+      overview: "",
+      whyStartups: "",
+      alternatives: "",
+      search_results: "",
+      favicon: "",
+      ogImage: "",
+      categoryId: "none",
+      categoryIds: [],
+      isFavorite: false,
+      isArchived: false,
+      isDofollow: false,
+      keyFeatures: "",
+      useCases: "",
+      faqs: "",
+    });
+  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -242,11 +194,12 @@ export function BookmarkManager({
         overview: form.get("overview") as string,
         whyStartups: form.get("whyStartups") as string,
         alternatives: form.get("alternatives") as string,
-        pricingType: form.get("pricingType") as string,
+
         favicon: form.get("favicon") as string,
         ogImage: form.get("ogImage") as string,
         search_results: form.get("search_results") as string,
         categoryId: form.get("categoryId") as string,
+        categoryIds: formData.categoryIds,
         isFavorite: form.get("isFavorite") as string,
         isArchived: form.get("isArchived") as string,
         isDofollow: form.get("isDofollow") as string,
@@ -255,13 +208,12 @@ export function BookmarkManager({
         faqs: form.get("faqs") as string,
       };
 
-      if (!isNewBookmark) {
-        (formDataObject as any).id = form.get("id") as string;
-      }
-
       const result = isNewBookmark
         ? await createBookmark(null, formDataObject)
-        : await updateBookmark(null, formDataObject as any);
+        : await updateBookmark(null, {
+            ...formDataObject,
+            id: String(form.get("id") ?? ""),
+          });
 
       if (result.error) {
         toast.error(result.error);
@@ -282,66 +234,47 @@ export function BookmarkManager({
     }
   };
 
-  // Reset form when sheet opens/closes
-  useEffect(() => {
-    if (isSheetOpen) {
-      if (selectedBookmark) {
-        setFormData({
-          title: selectedBookmark.title,
-          slug: selectedBookmark.slug,
-          url: selectedBookmark.url,
-          description: selectedBookmark.description || "",
-          overview: selectedBookmark.overview || "",
-          whyStartups: selectedBookmark.whyStartups || "",
-          alternatives: selectedBookmark.alternatives || "",
-          pricingType: selectedBookmark.pricingType || "Paid",
-          search_results: selectedBookmark.search_results || "",
-          favicon: selectedBookmark.favicon || "",
-          ogImage: selectedBookmark.ogImage || "",
-          categoryId: selectedBookmark.categoryId?.toString() || "none",
-          isFavorite: selectedBookmark.isFavorite,
-          isArchived: selectedBookmark.isArchived,
-          isDofollow: selectedBookmark.isDofollow || false,
-          keyFeatures: selectedBookmark.keyFeatures ? JSON.stringify(selectedBookmark.keyFeatures, null, 2) : "",
-          useCases: selectedBookmark.useCases ? JSON.stringify(selectedBookmark.useCases, null, 2) : "",
-          faqs: selectedBookmark.faqs ? JSON.stringify(selectedBookmark.faqs, null, 2) : "",
-        });
-      } else {
-        resetForm();
-      }
-    }
-  }, [isSheetOpen, selectedBookmark]);
-
-  const resetForm = () => {
+  const populateForm = (bookmark: BookmarkWithCategory) => {
     setFormData({
-      title: "",
-      slug: "",
-      url: "",
-      description: "",
-      overview: "",
-      whyStartups: "",
-      alternatives: "",
-      pricingType: "Paid",
-      search_results: "",
-      favicon: "",
-      ogImage: "",
-      categoryId: "none",
-      isFavorite: false,
-      isArchived: false,
-      isDofollow: false,
-      keyFeatures: "",
-      useCases: "",
-      faqs: "",
+      title: bookmark.title,
+      slug: bookmark.slug,
+      url: bookmark.url,
+      description: bookmark.description || "",
+      overview: bookmark.overview || "",
+      whyStartups: bookmark.whyStartups || "",
+      alternatives: bookmark.alternatives || "",
+      search_results: bookmark.search_results || "",
+      favicon: bookmark.favicon || "",
+      ogImage: bookmark.ogImage || "",
+      categoryId: bookmark.categoryId?.toString() || "none",
+      categoryIds:
+        bookmark.categories.length > 0
+          ? bookmark.categories.map((category) => category.id.toString())
+          : bookmark.categoryId
+            ? [bookmark.categoryId.toString()]
+            : [],
+      isFavorite: bookmark.isFavorite,
+      isArchived: bookmark.isArchived,
+      isDofollow: bookmark.isDofollow || false,
+      keyFeatures: bookmark.keyFeatures
+        ? JSON.stringify(bookmark.keyFeatures, null, 2)
+        : "",
+      useCases: bookmark.useCases
+        ? JSON.stringify(bookmark.useCases, null, 2)
+        : "",
+      faqs: bookmark.faqs ? JSON.stringify(bookmark.faqs, null, 2) : "",
     });
   };
 
   const handleEdit = (bookmark: BookmarkWithCategory) => {
+    populateForm(bookmark);
     setSelectedBookmark(bookmark);
     setIsNewBookmark(false);
     setIsSheetOpen(true);
   };
 
   const handleNew = () => {
+    resetForm();
     setSelectedBookmark(null);
     setIsNewBookmark(true);
     setIsSheetOpen(true);
@@ -452,11 +385,6 @@ export function BookmarkManager({
     }
   };
 
-  // Clear selection when filter or pagination changes
-  useEffect(() => {
-    setSelectedBookmarks(new Set());
-  }, [searchTerm, selectedCategoryFilter, currentPage]);
-
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const title = e.target.value;
     const slug = generateSlug(title);
@@ -525,6 +453,7 @@ export function BookmarkManager({
       return;
     }
 
+    setIsUploading(true);
     try {
       const text = await file.text();
       const urls = text
@@ -547,6 +476,8 @@ export function BookmarkManager({
     } catch (error) {
       toast.error("Failed to process the CSV file");
       console.error(error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -654,14 +585,22 @@ export function BookmarkManager({
           <Input
             placeholder="Search by title, URL, description..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+              setSelectedBookmarks(new Set());
+            }}
             className="max-w-md"
           />
         </div>
         <div className="w-64">
           <Select
             value={selectedCategoryFilter}
-            onValueChange={setSelectedCategoryFilter}
+            onValueChange={(value) => {
+              setSelectedCategoryFilter(value);
+              setCurrentPage(1);
+              setSelectedBookmarks(new Set());
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder="All Categories" />
@@ -684,6 +623,8 @@ export function BookmarkManager({
             onClick={() => {
               setSearchTerm("");
               setSelectedCategoryFilter("all");
+              setCurrentPage(1);
+              setSelectedBookmarks(new Set());
             }}
           >
             Clear Filters
@@ -806,570 +747,48 @@ export function BookmarkManager({
           totalPages={totalPages}
           pageSize={pageSize}
           totalItems={filteredBookmarks.length}
-          onPageChange={setCurrentPage}
+          onPageChange={(page) => {
+            setCurrentPage(page);
+            setSelectedBookmarks(new Set());
+          }}
           onPageSizeChange={handlePageSizeChange}
           pageSizeOptions={[30, 50, 100]}
         />
       )}
 
-      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          <form id="bookmarkForm" onSubmit={handleSubmit}>
-            <SheetHeader className="flex flex-row items-start justify-between space-y-0 pb-6">
-              <div className="space-y-1">
-                <SheetTitle>
-                  {isNewBookmark ? "Add Bookmark" : "Edit Bookmark"}
-                </SheetTitle>
-                <SheetDescription>
-                  {isNewBookmark
-                    ? "Add a new bookmark to your collection"
-                    : "Update the details of your bookmark"}
-                </SheetDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="submit"
-                  disabled={isSaving}
-                  size="sm"
-                  className="shrink-0"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    "Save Changes"
-                  )}
-                </Button>
-                <SheetClose asChild>
-                  <Button type="button" variant="outline" size="sm">
-                    Cancel
-                  </Button>
-                </SheetClose>
-              </div>
-            </SheetHeader>
+      <EditBookmarkSheet
+        isSheetOpen={isSheetOpen}
+        setIsSheetOpen={setIsSheetOpen}
+        handleSubmit={handleSubmit}
+        isNewBookmark={isNewBookmark}
+        isSaving={isSaving}
+        isGenerating={isGenerating}
+        selectedBookmark={selectedBookmark}
+        formData={formData}
+        setFormData={setFormData}
+        handleUrlChange={handleUrlChange}
+        handleTitleChange={handleTitleChange}
+        handleGenerateContent={handleGenerateContent}
+        categories={categories}
+      />
 
-            <div className="space-y-6">
-              <input type="hidden" name="id" value={selectedBookmark?.id || ""} />
-              <input type="hidden" name="slug" value={formData.slug} />
-              <input type="hidden" name="favicon" value={formData.favicon} />
-              <input type="hidden" name="ogImage" value={formData.ogImage} />
-              <input type="hidden" name="categoryId" value={formData.categoryId} />
-              <input type="hidden" name="pricingType" value={formData.pricingType} />
-              <input type="hidden" name="isFavorite" value={formData.isFavorite ? "true" : "false"} />
-              <input type="hidden" name="isArchived" value={formData.isArchived ? "true" : "false"} />
-              <input type="hidden" name="isDofollow" value={formData.isDofollow ? "true" : "false"} />
+      <BulkUploadSheet
+        isBulkSheetOpen={isBulkSheetOpen}
+        setIsBulkSheetOpen={setIsBulkSheetOpen}
+        handleBulkUpload={handleBulkUpload}
+        isUploading={isUploading}
+        bulkUploadState={bulkUploadState}
+      />
 
-              <div className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="url">URL</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="url"
-                        name="url"
-                        type="url"
-                        required
-                        value={formData.url}
-                        onChange={handleUrlChange}
-                        placeholder="https://example.com"
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => {
-                          const form = document.getElementById(
-                            "bookmarkForm",
-                          ) as HTMLFormElement;
-                          if (form) handleGenerateContent(form);
-                        }}
-                        disabled={isGenerating}
-                      >
-                        {isGenerating ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          "Generate"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      required
-                      value={formData.title}
-                      onChange={handleTitleChange}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Tagline</Label>
-                    <Textarea
-                      id="description"
-                      name="description"
-                      value={formData.description}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          description: e.target.value,
-                        }))
-                      }
-                      placeholder="Short intro for list view (max 2 lines)"
-                      rows={2}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      This will be displayed in the list view and below the title on detail page
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="overview">Description</Label>
-                    <Textarea
-                      id="overview"
-                      name="overview"
-                      value={formData.overview}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          overview: e.target.value,
-                        }))
-                      }
-                      placeholder="Detailed content for detail page (supports Markdown)"
-                      rows={6}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Detailed description shown on the detail page (Markdown supported)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="whyStartups">Why do startups need this tool? (Optional)</Label>
-                    <Textarea
-                      id="whyStartups"
-                      name="whyStartups"
-                      value={formData.whyStartups}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          whyStartups: e.target.value,
-                        }))
-                      }
-                      placeholder="Explain why this tool is valuable for startups..."
-                      rows={4}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Optional: A paragraph explaining the value for startups
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="alternatives">Alternatives (Optional)</Label>
-                    <Input
-                      id="alternatives"
-                      name="alternatives"
-                      value={formData.alternatives}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          alternatives: e.target.value,
-                        }))
-                      }
-                      placeholder="Tool1, Tool2, Tool3"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Optional: Comma-separated list of alternative tools (e.g., Notion, Trello, Asana)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Pricing Type *</Label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {['Free', 'Freemium', 'Paid'].map((type) => (
-                        <button
-                          key={type}
-                          type="button"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              pricingType: type,
-                            }))
-                          }
-                          className={`px-4 py-3 rounded-lg border-2 transition-all font-medium ${formData.pricingType === type
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-input bg-background hover:bg-accent hover:text-accent-foreground'
-                            }`}
-                        >
-                          {type}
-                        </button>
-                      ))}
-                    </div>
-                    <input type="hidden" name="pricingType" value={formData.pricingType} />
-                    <p className="text-xs text-muted-foreground">
-                      Required: Select the pricing model for this tool
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
-                    <Select
-                      value={formData.categoryId}
-                      onValueChange={(value) =>
-                        setFormData((prev) => ({ ...prev, categoryId: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No Category</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.id.toString()}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="keyFeatures">Key Features (JSON)</Label>
-                    <Textarea
-                      id="keyFeatures"
-                      name="keyFeatures"
-                      value={formData.keyFeatures}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          keyFeatures: e.target.value,
-                        }))
-                      }
-                      placeholder='["Feature 1", "Feature 2"]'
-                      rows={4}
-                      className="font-mono text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="useCases">Use Cases (JSON)</Label>
-                    <Textarea
-                      id="useCases"
-                      name="useCases"
-                      value={formData.useCases}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          useCases: e.target.value,
-                        }))
-                      }
-                      placeholder='["Use Case 1", "Use Case 2"]'
-                      rows={4}
-                      className="font-mono text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="faqs">FAQs (JSON)</Label>
-                    <Textarea
-                      id="faqs"
-                      name="faqs"
-                      value={formData.faqs}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          faqs: e.target.value,
-                        }))
-                      }
-                      placeholder='[{"question": "Q1", "answer": "A1"}]'
-                      rows={6}
-                      className="font-mono text-sm"
-                    />
-                  </div>
-
-                  <ImageUpload
-                    type="logo"
-                    label="Logo Image URL"
-                    value={formData.favicon}
-                    onChange={(url) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        favicon: url,
-                      }))
-                    }
-                    placeholder="https://example.com/logo.png"
-                    description="Small logo displayed in cards and detail page header"
-                  />
-
-                  <ImageUpload
-                    type="cover"
-                    label="Cover Image URL"
-                    value={formData.ogImage}
-                    onChange={(url) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        ogImage: url,
-                      }))
-                    }
-                    placeholder="https://example.com/cover.jpg"
-                    description="Large preview image shown on detail page and social sharing"
-                  />
-
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="isFavorite"
-                        checked={formData.isFavorite}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            isFavorite: checked as boolean,
-                          }))
-                        }
-                      />
-                      <Label htmlFor="isFavorite">Favorite</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="isArchived"
-                        checked={formData.isArchived}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            isArchived: checked as boolean,
-                          }))
-                        }
-                      />
-                      <Label htmlFor="isArchived">Archived</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="isDofollow"
-                        checked={formData.isDofollow}
-                        onCheckedChange={(checked) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            isDofollow: checked as boolean,
-                          }))
-                        }
-                      />
-                      <Label htmlFor="isDofollow" className="font-semibold text-green-600">Dofollow</Label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
-        </SheetContent>
-      </Sheet>
-
-      <Sheet open={isBulkSheetOpen} onOpenChange={setIsBulkSheetOpen}>
-        <SheetContent className="w-full sm:max-w-xl">
-          <SheetHeader>
-            <SheetTitle>Bulk Upload Bookmarks</SheetTitle>
-            <SheetDescription>
-              Upload a CSV file with a list of URLs to import. Each URL will be
-              processed with a short delay to avoid rate limits.
-            </SheetDescription>
-          </SheetHeader>
-
-          <form onSubmit={handleBulkUpload} className="mt-6 space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="file">Upload CSV File</Label>
-                <Input
-                  id="file"
-                  name="file"
-                  type="file"
-                  accept=".csv,text/csv"
-                  required
-                  disabled={isUploading}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Upload a CSV file with a list of URLs (one per line). The
-                  first row can optionally contain a header.
-                </p>
-              </div>
-
-              {isUploading && (
-                <div className="space-y-2 rounded-md bg-muted p-4">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm font-medium">
-                      Processing URLs...
-                    </span>
-                  </div>
-                  {bulkUploadState?.progress && (
-                    <div className="text-sm text-muted-foreground">
-                      Processing {bulkUploadState.progress.current} of{" "}
-                      {bulkUploadState.progress.total} URLs
-                    </div>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    This may take a while. Please keep this window open.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <SheetFooter>
-              <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
-                <SheetClose asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isUploading}
-                  >
-                    Cancel
-                  </Button>
-                </SheetClose>
-                <Button type="submit" disabled={isUploading}>
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    "Upload and Process"
-                  )}
-                </Button>
-              </div>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
-
-      {/* JSON Import Sheet */}
-      <Sheet open={isJsonImportSheetOpen} onOpenChange={setIsJsonImportSheetOpen}>
-        <SheetContent className="w-full sm:max-w-3xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Import Bookmarks from JSON</SheetTitle>
-            <SheetDescription>
-              Paste your JSON array of bookmarks below. All bookmarks will be imported to the selected category.
-            </SheetDescription>
-          </SheetHeader>
-
-          <form onSubmit={handleJsonImport} className="mt-6 space-y-6">
-            <div className="space-y-4">
-              {/* Category Selection */}
-              <div className="space-y-2">
-                <Label htmlFor="importCategory">Target Category *</Label>
-                <Select
-                  value={jsonImportCategory}
-                  onValueChange={setJsonImportCategory}
-                  disabled={isImporting}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Select a category...</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  All bookmarks in the JSON will be imported to this category.
-                </p>
-              </div>
-
-              {/* JSON Data Input */}
-              <div className="space-y-2">
-                <Label htmlFor="jsonData">JSON Data *</Label>
-                <Textarea
-                  id="jsonData"
-                  name="jsonData"
-                  placeholder='[
-  {
-    "url": "https://example.com",
-    "title": "Example Site",
-    "tagline": "Short intro for list view",
-    "description": "Full description for detail page",
-    "whyStartups": "Why startups need this...",
-    "alternatives": "Tool1, Tool2, Tool3",
-    "pricingType": "Freemium",
-    "logo_url": "https://example.com/logo.png",
-    "cover_url": "https://example.com/cover.png"
-  }
-]'
-                  rows={20}
-                  className="font-mono text-xs"
-                  required
-                  disabled={isImporting}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Paste your JSON array here. Each object should have at least <code>url</code> and <code>title</code> fields.
-                </p>
-              </div>
-
-              {/* Field Mapping Info */}
-              <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
-                <h4 className="font-semibold text-sm">Field Mapping:</h4>
-                <ul className="text-xs space-y-1 text-muted-foreground">
-                  <li>• <code>url</code> → URL (required)</li>
-                  <li>• <code>title</code> → Title (required)</li>
-                  <li>• <code>tagline</code> → Tagline (list view description)</li>
-                  <li>• <code>description</code> → Description (detail page content)</li>
-                  <li>• <code>whyStartups</code> or <code>why_startups</code> → Why Startups (optional)</li>
-                  <li>• <code>alternatives</code> → Alternatives (optional)</li>
-                  <li>• <code>pricingType</code> or <code>pricing_type</code> → Pricing (optional, default: Paid)</li>
-                  <li>• <code>logo_url</code> → Logo</li>
-                  <li>• <code>cover_url</code> → Cover</li>
-                  <li className="text-amber-600 mt-2">⚠️ Other fields (logo_path, cover_path, category, detail_url, etc.) will be ignored</li>
-                </ul>
-              </div>
-
-              {isImporting && (
-                <div className="space-y-2 rounded-md bg-muted p-4">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm font-medium">
-                      Importing bookmarks...
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <SheetFooter>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsJsonImportSheetOpen(false);
-                    setJsonImportCategory("none");
-                  }}
-                  disabled={isImporting}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isImporting || jsonImportCategory === "none"}>
-                  {isImporting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Importing...
-                    </>
-                  ) : (
-                    <>
-                      <FileJson className="mr-2 h-4 w-4" />
-                      Import Bookmarks
-                    </>
-                  )}
-                </Button>
-              </div>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
+      <JsonImportSheet
+        isJsonImportSheetOpen={isJsonImportSheetOpen}
+        setIsJsonImportSheetOpen={setIsJsonImportSheetOpen}
+        handleJsonImport={handleJsonImport}
+        jsonImportCategory={jsonImportCategory}
+        setJsonImportCategory={setJsonImportCategory}
+        isImporting={isImporting}
+        categories={categories}
+      />
     </div>
   );
 }

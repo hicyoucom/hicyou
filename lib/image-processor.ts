@@ -1,4 +1,8 @@
+import { logger } from "@/lib/logger";
+import { isIsoBaseMediaFile } from "@/lib/image-safety";
 import sharp from "sharp";
+
+const MAX_INPUT_IMAGE_PIXELS = 40_000_000;
 
 /**
  * Process and convert image to AVIF format
@@ -21,7 +25,14 @@ export async function processImageToAvif(
   } = options;
 
   try {
-    let image = sharp(buffer);
+    if (isIsoBaseMediaFile(buffer)) {
+      throw new Error("HEIF-family input is temporarily unsupported");
+    }
+
+    let image = sharp(buffer, {
+      failOn: "warning",
+      limitInputPixels: MAX_INPUT_IMAGE_PIXELS,
+    });
 
     // Get metadata
     const metadata = await image.metadata();
@@ -47,7 +58,7 @@ export async function processImageToAvif(
 
     return avifBuffer;
   } catch (error) {
-    console.error("Error processing image:", error);
+    logger.error("Error processing image:", error);
     throw new Error("Failed to process image");
   }
 }
@@ -59,10 +70,18 @@ export async function processImageToAvif(
  */
 export async function validateImage(buffer: Buffer): Promise<boolean> {
   try {
-    const metadata = await sharp(buffer).metadata();
+    if (isIsoBaseMediaFile(buffer)) {
+      return false;
+    }
 
-    // Check if it's a valid image format
-    const validFormats = ["jpeg", "jpg", "png", "webp", "gif", "svg", "avif"];
+    const metadata = await sharp(buffer, {
+      failOn: "warning",
+      limitInputPixels: MAX_INPUT_IMAGE_PIXELS,
+    }).metadata();
+
+    // Check if it's a valid image format. SVG is intentionally excluded
+    // because it can carry inline JavaScript (stored XSS).
+    const validFormats = ["jpeg", "jpg", "png", "webp", "gif"];
     if (!metadata.format || !validFormats.includes(metadata.format)) {
       return false;
     }
@@ -73,7 +92,7 @@ export async function validateImage(buffer: Buffer): Promise<boolean> {
     }
 
     return true;
-  } catch (error) {
+  } catch {
     return false;
   }
 }
@@ -94,4 +113,3 @@ export function generateUniqueFilename(originalName: string): string {
 
   return `${sanitizedName}-${timestamp}-${randomString}.avif`;
 }
-

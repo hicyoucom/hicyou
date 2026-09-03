@@ -89,6 +89,7 @@ export const CategoryFilter = ({ categories }: CategoryFilterProps) => {
     <div className="my-12 flex items-center justify-between space-y-2">
       <div className="flex items-center gap-2">
         <SearchInput
+          key={searchParams.get("search") ?? ""}
           defaultValue={searchParams.get("search") ?? ""}
           onChange={handleSearch}
           isPending={isPending}
@@ -117,9 +118,9 @@ export const CategoryFilter = ({ categories }: CategoryFilterProps) => {
             aria-pressed={currentCategory === category.id}
           >
             {category.icon && (
-              <DynamicIcon 
-                name={category.icon} 
-                className="h-3.5 w-3.5 mr-1" 
+              <DynamicIcon
+                name={category.icon}
+                className="h-3.5 w-3.5 mr-1"
                 aria-label={category.name}
               />
             )}
