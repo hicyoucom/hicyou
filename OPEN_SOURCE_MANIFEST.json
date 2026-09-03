@@ -993,6 +993,16 @@
       "ownership": "generated"
     },
     {
+      "path": "docs/images/hicyou-home-en.png",
+      "sha256": "f204040ba237ca3aa65137718ba13d29e9519462f988b543c52af6e91b3ef569",
+      "ownership": "generated"
+    },
+    {
+      "path": "docs/images/hicyou-home-zh.png",
+      "sha256": "3c24e43db325e6d9261e60aa14ff9ecc7398b5a045783e525e30bf744dc2d645",
+      "ownership": "generated"
+    },
+    {
       "path": "docs/MIGRATING_FROM_V1.md",
       "sha256": "588af453dd07d4f637cd9f2f3348d7dc22f565e25ebf81ca7106e30abd91468a",
       "ownership": "generated"
@@ -1754,12 +1764,17 @@
     },
     {
       "path": "README.md",
-      "sha256": "d67d552afc7b4a29e5fd081e67f38afed19d0b8b8896c10888879e4c83d642d8",
+      "sha256": "c3bbb05c2d85fc3eeae769f4ab36299bdb528c7c0d9cf34b585ef4a7ef0ce7f5",
+      "ownership": "generated"
+    },
+    {
+      "path": "README.zh-CN.md",
+      "sha256": "ef4e50fee68a9620e1845924207756c48b7a76cfd4366d153f614f33912af79e",
       "ownership": "generated"
     },
     {
       "path": "scripts/check-open-source-boundaries.mjs",
-      "sha256": "2d83ccb1bf4eb6be08badacca7c0b09c049b855ad089398c820603a0f4e387a3",
+      "sha256": "86a8e76dd6c262404a167c0867439c022c2a15433aeb2b408acfb24472dca2c9",
       "ownership": "generated"
     },
     {
@@ -1859,7 +1874,7 @@
     },
     {
       "path": "THIRD_PARTY_LICENSES.md",
-      "sha256": "7d9c613c68887808a39139c2b129690ed1d7719dcfb720ccdb5d4321acfa8f52",
+      "sha256": "d07b808e005427c43f7416843b6f308338be19080a4a4eb5bda9083f07fc334b",
       "ownership": "generated"
     },
     {

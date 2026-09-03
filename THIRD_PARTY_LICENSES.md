@@ -33,6 +33,13 @@ font project by Vercel and the Geist Project Authors. They remain licensed
 under the SIL Open Font License 1.1 and are not relicensed under Apache-2.0.
 The required copyright notice and full license are in [OFL-1.1.txt](OFL-1.1.txt).
 
+## Screenshots
+
+The screenshots in `docs/images/` document the hosted HiCyou interface and may
+display third-party product names, logos, and preview images. Those marks and
+images remain the property of their respective owners and are not licensed
+under Apache-2.0.
+
 ## Installed packages and container images
 
 JavaScript packages installed from `package.json` retain their own licenses.
