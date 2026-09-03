@@ -81,7 +81,7 @@ export async function safeFetchHtml(
       const response = await fetchImpl(current, {
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; DirectoryBot/1.0; +https://hicyou.com)",
+            "Mozilla/5.0 (compatible; HiCyouBot/1.0; +https://hicyou.com)",
         },
         signal: abortController.signal,
       });

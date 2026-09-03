@@ -16,6 +16,28 @@ const exportId = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const sha256Pattern = /^[0-9a-f]{64}$/;
 const join = (...parts) => parts.join("");
 const textRules = [
+  ["legacy-findly-brand", new RegExp(join("findly", " tools"), "i")],
+  ["legacy-directory-bot", new RegExp(join("directory", "bot/1\\.0"), "i")],
+  [
+    "unsupported-audience-claim",
+    new RegExp(
+      join(
+        "thousands",
+        " of (?:potential users|developers)",
+        "|数",
+        "千(?:名|人|の潜在ユーザー)",
+        "|miles",
+        " de (?:usuarios|desarrolladores)",
+        "|milhares",
+        " de (?:usuários|desenvolvedores)",
+        "|tausenden?",
+        " (?:potenzieller|von)",
+        "|des milliers",
+        " d['’](?:utilisateurs|développeurs)",
+      ),
+      "i",
+    ),
+  ],
   ["private-repository-name", new RegExp(join("hicyou-", "pravite"), "i")],
   [
     "private-campaign",

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "exportId": "v2-content-preview-20260903-06",
+  "exportId": "v2-content-preview-20260903-07",
   "files": [
     {
       "path": ".dockerignore",
@@ -199,7 +199,7 @@
     },
     {
       "path": "app/[locale]/open-source/page.tsx",
-      "sha256": "7cf1121b849f6b73a64cd8bcf460f2610d55d5bbe422b6200f017e535e82566e",
+      "sha256": "85dea0f35a2f99a306e7482821cc0d609b0a07b2f35868fc8dded9df1bc3a78e",
       "ownership": "generated"
     },
     {
@@ -209,7 +209,7 @@
     },
     {
       "path": "app/[locale]/submit/[id]/page.tsx",
-      "sha256": "dda5f9d089c06afe468d697400e9eeaa0515209efaef5d18d213d210623c47d6",
+      "sha256": "6e5ca71fe16fbe280d1457aa6b44b610aecb90c8cd7db0d99421a34a3c37b97a",
       "ownership": "generated"
     },
     {
@@ -1014,37 +1014,37 @@
     },
     {
       "path": "i18n/messages/de.json",
-      "sha256": "8ac52570d9689d12b0ce0c6e34a713f6071d66d3dc7734226e580b560667b3ed",
+      "sha256": "7a0d9d0616e6dbe5c1ed7afcdea89074c15debe20f9114a123a5ada1fbdb857a",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/en.json",
-      "sha256": "dc108cc2b876bb77af94bc319a656ba275b4e6d19012bf38218e5fcaecd1713f",
+      "sha256": "68807506e515407332379f58bc725b98670405343bd619adadd499a2a2c2e388",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/es.json",
-      "sha256": "dfee35af0eea5bb077eb1cd0866bc80fbd16c408b263094666e7a7305149b327",
+      "sha256": "9cd098bf0eaf95a74fd3eaa7edf0bd22648593dced76f0d8389877e31845f906",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/fr.json",
-      "sha256": "ef9e3eaf50da993625d0571b0e6a624d85501305efca595d7fc32935336755ac",
+      "sha256": "393f21060d872a11561f546edba7ba4d1f68bbce995457a28dc4159f65299a66",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/ja.json",
-      "sha256": "08239396e16a133578f0ad93b10ff92083e3ddfc97600cf27c98780dc4ead7c2",
+      "sha256": "4802cc21ec9f30e8f35fce30de2cbe6e3df8b910be67cada6b6a33438a25508e",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/pt.json",
-      "sha256": "63bcfb015d0be796b7bd836eb22fccfd68b43a3ff440d19bcd5b00769d0a5e69",
+      "sha256": "e2877df115bfa93cc85e02ab92afb2848bfc9bd311aec3d5f253cc7a5c5e02d3",
       "ownership": "generated"
     },
     {
       "path": "i18n/messages/zh.json",
-      "sha256": "474a2ccd1005e22e9a4a3d210c816d980f4d00bd63b0d5ac5f9f25a2122d44e6",
+      "sha256": "667b4a938b3d05caadffff9c6664db9ea151fbc118df30318314532d332cdebc",
       "ownership": "generated"
     },
     {
@@ -1159,7 +1159,7 @@
     },
     {
       "path": "lib/__tests__/public-http.test.ts",
-      "sha256": "d345965b1b62d44e9261c4b529018b584f7c39215cd7d458c53c38e9334505c4",
+      "sha256": "a2067feb6f71957996541769d1f24d00f90e33f9aea352421959811d2a9f3c73",
       "ownership": "generated"
     },
     {
@@ -1429,7 +1429,7 @@
     },
     {
       "path": "lib/fetch-metadata.ts",
-      "sha256": "1759006ff959077113c31ea80cdb18e829e0ca1526761012463843f188e812dd",
+      "sha256": "230808e33519bb3d8af6a164ea4938bb83074ff4659fd3d632a1266280ef6ec2",
       "ownership": "generated"
     },
     {
@@ -1759,7 +1759,7 @@
     },
     {
       "path": "scripts/check-open-source-boundaries.mjs",
-      "sha256": "a20c865547b1556afd58fa66ebe190083434f4b74d12792cfa96ef3aed73402d",
+      "sha256": "2d83ccb1bf4eb6be08badacca7c0b09c049b855ad089398c820603a0f4e387a3",
       "ownership": "generated"
     },
     {

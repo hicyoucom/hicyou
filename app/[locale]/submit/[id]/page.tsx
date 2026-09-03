@@ -247,7 +247,7 @@ export default async function SubmissionPage(props: Props) {
                                     <div className="rounded-xl border bg-card p-6 space-y-4">
                                         <h3 className="font-semibold text-lg">Submit Your Tool</h3>
                                         <p className="text-sm text-muted-foreground">
-                                            Get featured on Findly Tools and reach thousands of potential users
+                                            Submit your product to HiCyou and help people discover it.
                                         </p>
                                         <Button asChild className="w-full">
                                             <Link href="/submit">Submit Now</Link>

@@ -3,10 +3,30 @@ import { describe, expect, test } from "bun:test";
 import {
   createPinnedRequestOptions,
   fetchPublicHttpUrl,
+  type PublicHttpRequestInit,
 } from "@/lib/public-http";
+import { safeFetchHtml } from "@/lib/fetch-metadata";
 import type { ResolvedPublicUrl } from "@/lib/url-validator";
 
 describe("public HTTP transport", () => {
+  test("identifies metadata requests as HiCyou", async () => {
+    let requestInit: PublicHttpRequestInit | undefined;
+    const result = await safeFetchHtml(
+      new URL("https://example.com/product"),
+      async (_url, init) => {
+        requestInit = init;
+        return new Response("<html><title>Example</title></html>", {
+          headers: { "content-type": "text/html" },
+        });
+      },
+    );
+
+    expect(new Headers(requestInit?.headers).get("user-agent")).toBe(
+      "Mozilla/5.0 (compatible; HiCyouBot/1.0; +https://hicyou.com)",
+    );
+    expect(result.url.toString()).toBe("https://example.com/product");
+  });
+
   test("connects to the validated IP while preserving Host and TLS SNI", () => {
     const target: ResolvedPublicUrl = {
       url: new URL("https://service.example/path?item=1"),
