@@ -45,7 +45,14 @@ import {
 // Metadata
 import { Metadata, ResolvingMetadata } from "next";
 import Markdown from "react-markdown";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
+
+export const revalidate = 3600;
+
+// Generate each product on demand; builds do not enumerate the database.
+export function generateStaticParams() {
+  return [];
+}
 
 type Props = {
   params: Promise<{ slug: string; locale: string }>;
@@ -56,6 +63,7 @@ export async function generateMetadata(
   parent: ResolvingMetadata,
 ): Promise<Metadata> {
   const { slug, locale } = await params;
+  setRequestLocale(locale);
   const rawBookmark = await getBookmarkBySlug(slug);
 
   if (!rawBookmark) {
@@ -109,6 +117,7 @@ export async function generateMetadata(
 
 export default async function Page({ params }: Props) {
   const { slug, locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations("detail");
   const [rawBookmark, categories] = await Promise.all([
     getBookmarkBySlug(slug),
@@ -327,6 +336,8 @@ export default async function Page({ params }: Props) {
                   <div className="max-w-3xl overflow-hidden rounded-xl border bg-muted">
                     <SafeExternalImage
                       src={bookmark.ogImage}
+                      loading="eager"
+                      fetchPriority="high"
                       alt={`${bookmark.title} preview`}
                       className="h-auto w-full object-cover"
                       style={{ maxHeight: "400px" }}

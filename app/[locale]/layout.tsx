@@ -13,6 +13,7 @@ import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { Matomo } from "@/components/analytics/matomo";
 import { Toaster } from "@/components/ui/sonner";
 import "../globals.css";
+import { clientMessages } from "@/i18n/client-messages";
 
 const font = localFont({
   src: [
@@ -37,7 +38,13 @@ export const metadata: Metadata = {
       { url: "/favicon/favicon-96x96.png", sizes: "96x96", type: "image/png" },
       { url: "/favicon/favicon.svg", type: "image/svg+xml" },
     ],
-    apple: [{ url: "/favicon/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    apple: [
+      {
+        url: "/favicon/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
   },
   openGraph: {
     title: directory.title,
@@ -46,12 +53,14 @@ export const metadata: Metadata = {
     siteName: directory.title,
     locale: "en_US",
     type: "website",
-    images: [{
-      url: new URL("/ogimage.avif", directory.baseUrl).toString(),
-      width: 1200,
-      height: 630,
-      alt: directory.title,
-    }],
+    images: [
+      {
+        url: new URL("/ogimage.avif", directory.baseUrl).toString(),
+        width: 1200,
+        height: 630,
+        alt: directory.title,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -73,36 +82,15 @@ export const metadata: Metadata = {
   },
 };
 
-// Only namespaces consumed by client components (useTranslations) are shipped
-// to the browser. Server components use getTranslations and don't need them.
-const CLIENT_NAMESPACES = [
-  "common",
-  "nav",
-  "footer",
-  "auth",
-  "submit",
-  "badgePage",
-  "language",
-  "mobileDiscovery",
-] as const;
-
-type Messages = Record<string, unknown>;
-
-function pickMessages(messages: Messages): Messages {
-  const out: Messages = {};
-  for (const ns of CLIENT_NAMESPACES) {
-    if (ns in messages) out[ns] = messages[ns];
-  }
-  return out;
-}
-
 type Props = {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 };
 
 export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
+  // Render valid locales on first request: container builds run before the
+  // deployment database is migrated and must never cache an empty directory.
+  return [];
 }
 
 export default async function LocaleLayout({ children, params }: Props) {
@@ -115,7 +103,7 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   setRequestLocale(locale);
 
-  const messages = pickMessages(await getMessages());
+  const messages = clientMessages(await getMessages());
 
   return (
     <html lang={locale} suppressHydrationWarning>

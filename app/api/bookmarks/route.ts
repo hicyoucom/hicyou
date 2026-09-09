@@ -1,11 +1,24 @@
+import { invalidateAllBookmarks } from "@/lib/bookmark-cache";
 import { logger } from "@/lib/logger";
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/db/client";
 import { bookmarkCategories, bookmarks } from "@/db/schema";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
-import { and, asc, count, desc, eq, exists, gt, ilike, inArray, lt, notExists, or, type SQL } from "drizzle-orm";
-import { revalidateTag } from "next/cache";
-import { CACHE_TAGS } from "@/lib/cache-tags";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  gt,
+  ilike,
+  inArray,
+  lt,
+  notExists,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { z } from "zod";
 import {
   normalizeCategorySelection,
@@ -169,7 +182,9 @@ function buildCategoryClause(values: string[] | undefined): SQL | undefined {
   return or(...clauses);
 }
 
-function buildArchivedClause(value: ArchivedFilter | undefined): SQL | undefined {
+function buildArchivedClause(
+  value: ArchivedFilter | undefined,
+): SQL | undefined {
   // Default = hide archived. Explicit "all" disables the clause; "only"
   // flips it to show ONLY archived.
   const effective: ArchivedFilter = value ?? "hide";
@@ -196,14 +211,16 @@ function buildPricingClause(value: string | undefined): SQL | undefined {
 // design); title sorts produce a TitleCursor (title required). Callers
 // switch on `sort` first, so the narrowing is exhaustive.
 type ParsedCursor =
-  | { kind: "id"; id: number }
-  | { kind: "title"; id: number; title: string };
+  { kind: "id"; id: number } | { kind: "title"; id: number; title: string };
 
 // Strict numeric pattern: no scientific notation, no leading zeros, no
 // whitespace. Matches the original integer-id contract from PR #7.
 const NUMERIC_CURSOR_PATTERN = /^[1-9]\d*$/;
 
-function decodeCursor(raw: string | undefined, sort: SortOption): ParsedCursor | null {
+function decodeCursor(
+  raw: string | undefined,
+  sort: SortOption,
+): ParsedCursor | null {
   if (!raw) return null;
   if (sort === "newest" || sort === "oldest") {
     if (!NUMERIC_CURSOR_PATTERN.test(raw)) return null;
@@ -228,12 +245,21 @@ function decodeCursor(raw: string | undefined, sort: SortOption): ParsedCursor |
   }
 }
 
-function encodeCursor(row: { id: number; title: string }, sort: SortOption): string {
+function encodeCursor(
+  row: { id: number; title: string },
+  sort: SortOption,
+): string {
   if (sort === "newest" || sort === "oldest") return String(row.id);
-  return Buffer.from(JSON.stringify({ t: row.title, i: row.id }), "utf8").toString("base64url");
+  return Buffer.from(
+    JSON.stringify({ t: row.title, i: row.id }),
+    "utf8",
+  ).toString("base64url");
 }
 
-function buildCursorClause(cursor: ParsedCursor | null, sort: SortOption): SQL | undefined {
+function buildCursorClause(
+  cursor: ParsedCursor | null,
+  sort: SortOption,
+): SQL | undefined {
   if (!cursor) return undefined;
   // Sort and cursor.kind are paired by `decodeCursor` — the union'd guard
   // below makes the invariant explicit. We throw (not silently return) on
@@ -263,13 +289,19 @@ function buildCursorClause(cursor: ParsedCursor | null, sort: SortOption): SQL |
       // for TS, so the cast after assertKind is needed.
       return or(
         gt(bookmarks.title, (cursor as { title: string }).title),
-        and(eq(bookmarks.title, (cursor as { title: string }).title), gt(bookmarks.id, cursor.id)),
+        and(
+          eq(bookmarks.title, (cursor as { title: string }).title),
+          gt(bookmarks.id, cursor.id),
+        ),
       );
     case "title_desc":
       assertKind("title");
       return or(
         lt(bookmarks.title, (cursor as { title: string }).title),
-        and(eq(bookmarks.title, (cursor as { title: string }).title), lt(bookmarks.id, cursor.id)),
+        and(
+          eq(bookmarks.title, (cursor as { title: string }).title),
+          lt(bookmarks.id, cursor.id),
+        ),
       );
   }
 }
@@ -343,7 +375,10 @@ const LIST_COLUMNS = {
 export async function GET(request: NextRequest) {
   const auth = await requireAdmin();
   if (!auth.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: auth.status });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: auth.status },
+    );
   }
 
   // Manual extraction (NOT Object.fromEntries(entries())) so multi-valued
@@ -364,7 +399,8 @@ export async function GET(request: NextRequest) {
     cursor: sp.get("cursor") ?? undefined,
     limit: sp.get("limit") ?? undefined,
     q: sp.get("q") ?? undefined,
-    category: sp.getAll("category").length > 0 ? sp.getAll("category") : undefined,
+    category:
+      sp.getAll("category").length > 0 ? sp.getAll("category") : undefined,
     archived: sp.get("archived") ?? undefined,
     pricingType: sp.get("pricingType") ?? undefined,
     sort: sp.get("sort") ?? undefined,
@@ -381,7 +417,10 @@ export async function GET(request: NextRequest) {
   const cursor = decodeCursor(cursorRaw, sort);
   if (cursorRaw !== undefined && cursor === null) {
     return NextResponse.json(
-      { error: "Invalid query", details: { cursor: ["Malformed cursor for the requested sort"] } },
+      {
+        error: "Invalid query",
+        details: { cursor: ["Malformed cursor for the requested sort"] },
+      },
       { status: 400 },
     );
   }
@@ -424,7 +463,9 @@ export async function GET(request: NextRequest) {
     }));
     const lastItem = items[items.length - 1];
     const nextCursor =
-      hasMore && lastItem ? encodeCursor({ id: lastItem.id, title: lastItem.title }, sort) : null;
+      hasMore && lastItem
+        ? encodeCursor({ id: lastItem.id, title: lastItem.title }, sort)
+        : null;
 
     // total only on the first page (cursor not supplied) — the client
     // memoises it and decrements locally on delete; revisiting via a fresh
@@ -433,7 +474,9 @@ export async function GET(request: NextRequest) {
     // independently of the malformed-cursor 400 guard above.
     let total: number | null = null;
     if (cursorRaw === undefined) {
-      const totalWhere = sharedFilters.length ? and(...sharedFilters) : undefined;
+      const totalWhere = sharedFilters.length
+        ? and(...sharedFilters)
+        : undefined;
       const totalRow = await db
         .select({ count: count() })
         .from(bookmarks)
@@ -458,7 +501,10 @@ export async function POST(request: Request) {
   try {
     const auth = await requireAdmin();
     if (!auth.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: auth.status });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: auth.status },
+      );
     }
 
     const bodyParse = bookmarkCreateSchema.safeParse(await request.json());
@@ -487,31 +533,34 @@ export async function POST(request: Request) {
 
     // Insert first so the audit row can carry the assigned id.
     const inserted = await db.transaction(async (tx) => {
-      const rows = await tx.insert(bookmarks).values({
-        url: normalizedUrl,
-        title: body.title,
-        slug,
-        description: body.description || null,
-        categoryId: categoryIds[0] ?? null,
-        overview: body.overview || null,
-        favicon: body.favicon || null,
-        screenshot: body.screenshot || null,
-        ogImage: body.ogImage || null,
-        ogTitle: body.ogTitle || null,
-        ogDescription: body.ogDescription || null,
-        pricingType: body.pricingType,
-        whyStartups: body.whyStartups || null,
-        alternatives: body.alternatives || null,
-        notes: body.notes || null,
-        tags: body.tags || null,
-        isArchived: body.isArchived ?? false,
-        isFavorite: body.isFavorite ?? false,
-        isDofollow: body.isDofollow ?? false,
-        search_results: body.search_results || null,
-        keyFeatures: body.keyFeatures || [],
-        useCases: body.useCases || [],
-        faqs: body.faqs || [],
-      }).returning({ id: bookmarks.id });
+      const rows = await tx
+        .insert(bookmarks)
+        .values({
+          url: normalizedUrl,
+          title: body.title,
+          slug,
+          description: body.description || null,
+          categoryId: categoryIds[0] ?? null,
+          overview: body.overview || null,
+          favicon: body.favicon || null,
+          screenshot: body.screenshot || null,
+          ogImage: body.ogImage || null,
+          ogTitle: body.ogTitle || null,
+          ogDescription: body.ogDescription || null,
+          pricingType: body.pricingType,
+          whyStartups: body.whyStartups || null,
+          alternatives: body.alternatives || null,
+          notes: body.notes || null,
+          tags: body.tags || null,
+          isArchived: body.isArchived ?? false,
+          isFavorite: body.isFavorite ?? false,
+          isDofollow: body.isDofollow ?? false,
+          search_results: body.search_results || null,
+          keyFeatures: body.keyFeatures || [],
+          useCases: body.useCases || [],
+          faqs: body.faqs || [],
+        })
+        .returning({ id: bookmarks.id });
       await replaceBookmarkCategories(tx, rows[0].id, categoryIds, {
         source: "manual",
         allowDraft: true,
@@ -530,7 +579,7 @@ export async function POST(request: Request) {
     });
 
     // Bust cached bookmark reads (getAllBookmarks, featured/latest, counts).
-    revalidateTag(CACHE_TAGS.bookmarks, { expire: 0 });
+    invalidateAllBookmarks();
 
     return NextResponse.json(
       { message: "Bookmark created successfully", id: inserted[0]?.id },

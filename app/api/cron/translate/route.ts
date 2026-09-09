@@ -1,4 +1,3 @@
-import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -7,9 +6,11 @@ import {
   parseBatchTranslateInput,
   runBatchTranslation,
 } from "@/lib/batch-translate";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import { verifyCronAuth } from "@/lib/cron-auth";
-import { getUntranslatedBookmarkIds } from "@/lib/data";
+import {
+  getUntranslatedBookmarkIds,
+  countUntranslatedBookmarks,
+} from "@/lib/data";
 import { logger } from "@/lib/logger";
 import { translationFields } from "@/lib/translation-fields";
 
@@ -77,7 +78,7 @@ async function handle(request: Request) {
   }, TRANSLATION_CRON_TIMEOUT_MS);
 
   try {
-    const untranslatedIds = await getUntranslatedBookmarkIds(locale);
+    const untranslatedIds = await getUntranslatedBookmarkIds(locale, batchSize);
     if (untranslatedIds.length === 0) {
       results[locale] = { status: "up_to_date", remaining: 0 };
     } else {
@@ -94,13 +95,9 @@ async function handle(request: Request) {
       });
       clearTimeout(deadline);
 
-      if (result.succeeded > 0) {
-        revalidateTag(CACHE_TAGS.translations, { expire: 0 });
-        revalidatePath(`/${locale}`, "layout");
-      }
       if (result.failed > 0 || result.cancelled) hasFailures = true;
 
-      const remaining = (await getUntranslatedBookmarkIds(locale)).length;
+      const remaining = await countUntranslatedBookmarks(locale);
       results[locale] = {
         status: result.cancelled
           ? timedOut

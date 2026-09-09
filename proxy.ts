@@ -1,3 +1,5 @@
+import { MAX_SEARCH_LENGTH } from "@/lib/search";
+import { checkActionRateLimit, getClientIp } from "@/lib/rate-limit";
 import { locales } from "@/i18n/config";
 import { routing } from "@/i18n/routing";
 import { isBot } from "@/lib/bot-detect";
@@ -90,6 +92,7 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon") ||
     pathname === "/sitemap.xml" ||
+    pathname.startsWith("/sitemaps/") ||
     pathname === "/robots.txt" ||
     pathname === "/llms.txt" ||
     pathname === "/llms-full.txt" ||
@@ -111,6 +114,50 @@ export async function proxy(request: NextRequest) {
   const pathWithoutLocale = pathLocale
     ? `/${pathSegments.slice(1).join("/")}`
     : pathname;
+
+  // Apply before rendering and before cache lookup: distinct keywords must not
+  // bypass the distributed budget. HEAD and POST can render App Router pages
+  // too. API requests have their own token budgets.
+  if (
+    request.nextUrl.searchParams.has("search") &&
+    (pathWithoutLocale === "/" ||
+      pathWithoutLocale === "/search/results" ||
+      pathWithoutLocale.startsWith("/c/"))
+  ) {
+    const terms = request.nextUrl.searchParams.getAll("search");
+    if (terms.length !== 1) {
+      return withNoindex(
+        NextResponse.json(
+          { error: "Provide one search parameter" },
+          { status: 400 },
+        ),
+      );
+    }
+    const term = terms[0];
+    if (term.length > MAX_SEARCH_LENGTH) {
+      return withNoindex(
+        NextResponse.json({ error: "Search is too long" }, { status: 400 }),
+      );
+    }
+    if (term.trim()) {
+      const budget = await checkActionRateLimit(
+        "public-search",
+        getClientIp(request),
+        60,
+        60_000,
+      );
+      if (!budget.allowed)
+        return withNoindex(
+          NextResponse.json(
+            { error: "Too many searches. Please try again shortly." },
+            {
+              status: 429,
+              headers: { "Retry-After": "60", "Cache-Control": "no-store" },
+            },
+          ),
+        );
+    }
+  }
 
   const sessionCookie =
     request.cookies.get("better-auth.session_token") ||
@@ -137,6 +184,29 @@ export async function proxy(request: NextRequest) {
   }
 
   const response = intlMiddleware(intlRequest);
+  const keyword = request.nextUrl.searchParams.get("search")?.trim();
+  // Keep incoming search URLs stable while routing the dynamic work away from
+  // the ISR homepage/category paths. Respect locale redirects first.
+  if (
+    keyword &&
+    response.status === 200 &&
+    (pathWithoutLocale === "/" ||
+      /^\/c\/[^/]+(?:\/\d+)?$/.test(pathWithoutLocale))
+  ) {
+    const target = new URL(
+      response.headers.get("x-middleware-rewrite") ?? request.url,
+    );
+    const matchedLocale = target.pathname.split("/")[1];
+    const locale = locales.includes(matchedLocale as (typeof locales)[number])
+      ? matchedLocale
+      : (pathLocale ?? routing.defaultLocale);
+    const parts = pathWithoutLocale.split("/").filter(Boolean);
+    target.pathname =
+      parts.length === 0
+        ? `/${locale}/search/results`
+        : `/${locale}/c/${parts[1]}/search${parts[2] ? "/" + parts[2] : ""}`;
+    return NextResponse.rewrite(target, { headers: response.headers });
+  }
   if (shouldNoindex(pathname, pathWithoutLocale)) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }

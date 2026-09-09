@@ -41,3 +41,41 @@ The Node and PostgreSQL image tags are paired with reviewed manifest digests. Wh
 ## Optional services
 
 Email, OAuth, object storage, Turnstile, webhooks, analytics, and AI features are disabled or degraded when their corresponding variables are unset. Configure one feature at a time and use least-privilege credentials.
+
+## Public read performance migration
+
+The performance migration requires `pg_trgm`. Run `bun run db:migrate` using
+`MIGRATION_DATABASE_URL` for a direct or session-mode connection when the
+application uses transaction pooling. The migration command defaults to
+`DATABASE_URL`; port 6543 is rejected to prevent session-lock misuse on a
+transaction pooler. The migration role must be allowed to install extensions
+and create indexes.
+
+The runner resolves the existing `pg_trgm` schema, including installations in
+`extensions`. A session lock covers both phases; nonblocking polling avoids a
+waiting lock transaction blocking concurrent index creation.
+
+Transactional schema/function migrations run first. The eight indexes under
+`migrations/online/` are then created with `CONCURRENTLY`, outside a transaction.
+An advisory lock serializes that phase across application replicas. Reruns skip
+valid indexes and retry incomplete index builds. Keep these online files in the
+image; the bundled startup command runs both phases before accepting traffic.
+For a large existing database, run migrations as a release job before rolling
+out application containers. Index builds still consume CPU and I/O.
+
+The homepage, product pages, and category pages use on-demand ISR. Builds do not
+connect to the production database or pre-render empty directory pages. Existing
+`?search=` URLs are internally rewritten to dynamic search routes. Search terms
+are literal substrings, capped at 120 characters; short terms remain supported
+with a distributed request budget and a two-second SQL statement timeout.
+
+`R2_PUBLIC_URL` determines the image optimizer allowlist at build time. Without
+it, remote optimization is disabled. Publisher and historical admin preview
+images use `SafeExternalImage` and remain visible without opening that allowlist.
+
+The sitemap index stays at `/sitemap.xml`. Child XML files under `/sitemaps/`
+contain at most 1,000 records each, preserve language alternates, and use actual
+update timestamps. Configure the reverse proxy to pass these XML paths through.
+
+See [validation and review](SECURITY_PERFORMANCE_REVIEW.md) for test commands
+and the limits of the local benchmark.

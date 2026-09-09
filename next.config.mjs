@@ -36,7 +36,22 @@ const nextConfig = {
   images: {
     formats: ["image/webp"],
     minimumCacheTTL: 86400,
-    remotePatterns: [{ protocol: "https", hostname: "**", pathname: "/**" }],
+    // Publisher images use SafeExternalImage; only owned assets may be optimized.
+    remotePatterns: (() => {
+      const origin = configuredHttpOrigin(process.env.R2_PUBLIC_URL);
+      if (!origin) return [];
+      const url = new URL(origin);
+      return [
+        {
+          protocol: url.protocol.slice(0, -1),
+          hostname: url.hostname,
+          port: url.port,
+          pathname: "/**",
+          search: "",
+        },
+      ];
+    })(),
+    maximumRedirects: 0,
   },
   async headers() {
     const contentSecurityPolicy = [

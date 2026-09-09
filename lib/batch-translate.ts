@@ -1,3 +1,4 @@
+import { invalidateEntityTranslations } from "@/lib/translation-cache";
 import { db } from "@/db/client";
 import { bookmarks, categories, collections, translations } from "@/db/schema";
 import { defaultLocale, locales } from "@/i18n/config";
@@ -175,6 +176,7 @@ async function persistTranslations(
       ],
       set: { value: sql`excluded.value`, updatedAt: new Date() },
     });
+  invalidateEntityTranslations(entityType, [entityId], locale);
 }
 
 function errorMessage(error: unknown): string {

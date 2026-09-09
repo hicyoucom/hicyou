@@ -36,7 +36,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/migrations ./migrations
-COPY --from=builder --chown=nextjs:nodejs /app/scripts/migrate.mjs ./scripts/migrate.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/migrate.mjs /app/scripts/online-indexes.mjs ./scripts/
 COPY --from=migration-dependencies --chown=nextjs:nodejs /migrate/node_modules ./scripts/node_modules
 COPY --from=builder /app/LICENSE /app/NOTICE /app/OFL-1.1.txt /app/THIRD_PARTY_LICENSES.md /usr/share/licenses/hicyou/
 USER nextjs

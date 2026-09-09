@@ -9,7 +9,18 @@ import {
   bookmarkTags,
   translations,
 } from "@/db/schema";
-import { and, eq, exists, gt, gte, or, asc, inArray, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  gt,
+  gte,
+  or,
+  asc,
+  inArray,
+  sql,
+  type SQL,
+} from "drizzle-orm";
 import { publicBookmarkCondition } from "@/lib/public-bookmark";
 import {
   serializeProduct,
@@ -159,9 +170,10 @@ function toInput(
   categoryMap: Map<number, PublicCategoryAssignment[]>,
   trMap?: Map<number, ProductTranslations>,
 ): SerializeInput {
-  const primaryCategory = row.categorySlug && row.categoryName
-    ? { slug: row.categorySlug, name: row.categoryName }
-    : null;
+  const primaryCategory =
+    row.categorySlug && row.categoryName
+      ? { slug: row.categorySlug, name: row.categoryName }
+      : null;
   const assignedCategories = categoryMap.get(row.id);
   return {
     id: row.id,
@@ -271,7 +283,9 @@ export async function listProducts(opts: ListOptions): Promise<ListResult> {
   ]);
 
   const data = page.map((r) =>
-    serializeProduct(toInput(r, tagMap, categoryMap, trMap), { include: opts.include }),
+    serializeProduct(toInput(r, tagMap, categoryMap, trMap), {
+      include: opts.include,
+    }),
   );
   const last = page[page.length - 1];
   const nextCursor =
@@ -291,27 +305,32 @@ export async function searchProducts(
   opts: SearchOptions,
 ): Promise<Product[]> {
   const term = `%${q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`; // escape LIKE metachars
-  const rows = await db
-    .select(PRODUCT_COLUMNS)
-    .from(bookmarks)
-    .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
-    .where(
-      and(
-        publicBookmarkCondition(),
-        or(
-          sql`${bookmarks.title} ILIKE ${term}`,
-          sql`${bookmarks.description} ILIKE ${term}`,
-          sql`${bookmarks.overview} ILIKE ${term}`,
-        ),
-      ),
-    )
-    // Title matches first, then most-recently updated; id as a stable tie-breaker.
-    .orderBy(
-      sql`(${bookmarks.title} ILIKE ${term}) DESC`,
-      sql`${bookmarks.updatedAt} DESC`,
-      sql`${bookmarks.id} DESC`,
-    )
-    .limit(opts.limit);
+  const rows = await db.transaction(async (tx) => {
+    await tx.execute(sql`set local statement_timeout = '2000ms'`);
+    return (
+      tx
+        .select(PRODUCT_COLUMNS)
+        .from(bookmarks)
+        .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
+        .where(
+          and(
+            publicBookmarkCondition(),
+            or(
+              sql`${bookmarks.title} ILIKE ${term}`,
+              sql`${bookmarks.description} ILIKE ${term}`,
+              sql`${bookmarks.overview} ILIKE ${term}`,
+            ),
+          ),
+        )
+        // Title matches first, then most-recently updated; id as a stable tie-breaker.
+        .orderBy(
+          sql`(${bookmarks.title} ILIKE ${term}) DESC`,
+          sql`${bookmarks.updatedAt} DESC`,
+          sql`${bookmarks.id} DESC`,
+        )
+        .limit(opts.limit)
+    );
+  });
 
   const ids = rows.map((r) => r.id);
   const [tagMap, categoryMap, trMap] = await Promise.all([
@@ -322,7 +341,9 @@ export async function searchProducts(
       : Promise.resolve(undefined),
   ]);
   return rows.map((r) =>
-    serializeProduct(toInput(r, tagMap, categoryMap, trMap), { include: opts.include }),
+    serializeProduct(toInput(r, tagMap, categoryMap, trMap), {
+      include: opts.include,
+    }),
   );
 }
 
@@ -342,7 +363,9 @@ export async function getProductBySlug(
     categoriesFor([row.id]),
     translationsFor([row.id]),
   ]);
-  return serializeProduct(toInput(row, tagMap, categoryMap, trMap), { include });
+  return serializeProduct(toInput(row, tagMap, categoryMap, trMap), {
+    include,
+  });
 }
 
 export type ChangeEntry =
