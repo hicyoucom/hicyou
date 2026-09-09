@@ -1,30 +1,181 @@
 "use client";
 
-import * as React from "react";
-import dynamic from "next/dynamic";
-import dynamicIconImports from "lucide-react/dynamicIconImports";
-import { type LucideProps } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  House,
+  Book,
+  Code,
+  Palette,
+  Music,
+  Video,
+  Camera,
+  Image,
+  FileText,
+  Folder,
+  Database,
+  Server,
+  Cloud,
+  Globe,
+  Mail,
+  MessageSquare,
+  Users,
+  User,
+  Settings,
+  Wrench,
+  Zap,
+  Star,
+  Heart,
+  ShoppingCart,
+  CreditCard,
+  ChartBar,
+  TrendingUp,
+  Calendar,
+  Clock,
+  MapPin,
+  Phone,
+  Laptop,
+  Smartphone,
+  Gamepad2,
+  Trophy,
+  Award,
+  Gift,
+  Package,
+  Box,
+  Tag,
+  Filter,
+  Search,
+  Bell,
+  Lock,
+  Shield,
+  Key,
+  Eye,
+  EyeOff,
+  Download,
+  Upload,
+  Share,
+  Link,
+  ExternalLink,
+  Copy,
+  Pencil,
+  Trash2,
+  Plus,
+  Minus,
+  Check,
+  X,
+  CircleAlert,
+  Info,
+  CircleHelp,
+  ChevronRight,
+  ChevronLeft,
+  ArrowRight,
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  ChartNoAxesColumn,
+  CodeXml,
+  CircleX,
+  SquareX,
+  OctagonX,
+  CircleCheck,
+  CirclePlus,
+  CircleMinus,
+  type LucideIcon,
+  type LucideProps,
+} from "lucide-react";
 
-// Each entry in dynamicIconImports is `() => import("lucide-react/.../<icon>")`,
-// so wrapping with next/dynamic ships one chunk per icon. Replaces the previous
-// `import * as LucideIcons from "lucide-react"` wildcard, which forced the
-// entire 1544-icon set (~140 KB parsed) onto every page that mounted
-// DynamicIcon — the icon-picker only needs ~70 named choices, and category /
-// tag rows only render one icon at a time.
-
-type IconName = keyof typeof dynamicIconImports;
-
-interface DynamicIconProps extends Omit<LucideProps, "name"> {
-  name?: string | null;
-  fallback?: React.ReactNode;
+function toKebab(name: string): string {
+  return name
+    .replace(/([a-zA-Z])([0-9])/g, "$1-$2") // letter→digit
+    .replace(/([0-9])([a-zA-Z])/g, "$1-$2") // digit→letter (e.g. "2Plus" → "2-Plus")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2") // run-of-caps + camel tail
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2") // camelCase
+    .replace(/[_\s]+/g, "-")
+    .toLowerCase();
 }
 
-// Aliases for icons renamed during lucide upgrades — DB rows seeded under the
-// older PascalCase names (e.g. "Home", "AlertCircle", "XCircle") still
-// resolve. Add a row here when an icon disappears from a future lucide bump.
-// The "X" suffix-as-prefix forms (XCircle, XSquare, XOctagon) were flipped to
-// "circle-x" style in lucide ~0.300.
-const LEGACY_ALIASES: Record<string, IconName> = {
+const ICONS: Record<string, LucideIcon> = Object.fromEntries(
+  Object.entries({
+    House: House,
+    Book: Book,
+    Code: Code,
+    Palette: Palette,
+    Music: Music,
+    Video: Video,
+    Camera: Camera,
+    Image: Image,
+    FileText: FileText,
+    Folder: Folder,
+    Database: Database,
+    Server: Server,
+    Cloud: Cloud,
+    Globe: Globe,
+    Mail: Mail,
+    MessageSquare: MessageSquare,
+    Users: Users,
+    User: User,
+    Settings: Settings,
+    Wrench: Wrench,
+    Zap: Zap,
+    Star: Star,
+    Heart: Heart,
+    ShoppingCart: ShoppingCart,
+    CreditCard: CreditCard,
+    ChartBar: ChartBar,
+    TrendingUp: TrendingUp,
+    Calendar: Calendar,
+    Clock: Clock,
+    MapPin: MapPin,
+    Phone: Phone,
+    Laptop: Laptop,
+    Smartphone: Smartphone,
+    Gamepad2: Gamepad2,
+    Trophy: Trophy,
+    Award: Award,
+    Gift: Gift,
+    Package: Package,
+    Box: Box,
+    Tag: Tag,
+    Filter: Filter,
+    Search: Search,
+    Bell: Bell,
+    Lock: Lock,
+    Shield: Shield,
+    Key: Key,
+    Eye: Eye,
+    EyeOff: EyeOff,
+    Download: Download,
+    Upload: Upload,
+    Share: Share,
+    Link: Link,
+    ExternalLink: ExternalLink,
+    Copy: Copy,
+    Pencil: Pencil,
+    Trash2: Trash2,
+    Plus: Plus,
+    Minus: Minus,
+    Check: Check,
+    X: X,
+    CircleAlert: CircleAlert,
+    Info: Info,
+    CircleHelp: CircleHelp,
+    ChevronRight: ChevronRight,
+    ChevronLeft: ChevronLeft,
+    ArrowRight: ArrowRight,
+    ArrowLeft: ArrowLeft,
+    ArrowUp: ArrowUp,
+    ArrowDown: ArrowDown,
+    ChartNoAxesColumn: ChartNoAxesColumn,
+    CodeXml: CodeXml,
+    CircleX: CircleX,
+    SquareX: SquareX,
+    OctagonX: OctagonX,
+    CircleCheck: CircleCheck,
+    CirclePlus: CirclePlus,
+    CircleMinus: CircleMinus,
+  }).map(([name, Icon]) => [toKebab(name), Icon]),
+);
+
+const LEGACY_ALIASES: Record<string, string> = {
   home: "house",
   tool: "wrench",
   "bar-chart": "chart-bar",
@@ -42,66 +193,22 @@ const LEGACY_ALIASES: Record<string, IconName> = {
   "info-circle": "circle-help", // lucide collapses these onto circle-help/info
 };
 
-// kebab conversion that handles:
-//   • single-leading-cap: "House" → "house"
-//   • run-of-caps before camel tail: "XCircle" → "x-circle", "XMLParser" → "xml-parser"
-//   • camelCase tail: "FileText" → "file-text"
-//   • letter↔digit boundary: "Gamepad2" → "gamepad-2", "Trash2Plus" → "trash-2-plus"
-function toKebab(name: string): string {
-  return name
-    .replace(/([a-zA-Z])([0-9])/g, "$1-$2") // letter→digit
-    .replace(/([0-9])([a-zA-Z])/g, "$1-$2") // digit→letter (e.g. "2Plus" → "2-Plus")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2") // run-of-caps + camel tail
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2") // camelCase
-    .replace(/[_\s]+/g, "-")
-    .toLowerCase();
+interface DynamicIconProps extends Omit<LucideProps, "name"> {
+  name?: string | null;
+  fallback?: ReactNode;
 }
 
-// Cache next/dynamic wrappers — without this each render of the same icon
-// rebuilds the lazy component (no memoization → spurious chunk reloads).
-const componentCache = new Map<IconName, React.ComponentType<LucideProps>>();
-
-function getIcon(key: IconName): React.ComponentType<LucideProps> {
-  let cached = componentCache.get(key);
-  if (cached) return cached;
-  cached = dynamic(dynamicIconImports[key], {
-    ssr: true,
-    loading: () => null,
-  });
-  componentCache.set(key, cached);
-  return cached;
-}
-
-export function DynamicIcon({
-  name,
-  fallback = null,
-  ...props
-}: DynamicIconProps) {
-  if (!name) return <>{fallback}</>;
-  const kebab = toKebab(name);
-  const resolved =
-    kebab in dynamicIconImports ? (kebab as IconName) : LEGACY_ALIASES[kebab];
-
-  if (!resolved) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn(
-        `[DynamicIcon] "${name}" → "${kebab}" not in lucide-react/dynamicIconImports`,
-      );
-    }
-    return <>{fallback}</>;
-  }
-  const Icon = getIcon(resolved);
-  // getIcon caches every wrapper at module scope, so a resolved name always
-  // receives the same component identity after its first stateless render.
-  // eslint-disable-next-line react-hooks/static-components
+// Unknown imported names retain a visible generic icon. Never load the full
+// lucide registry on public pages; the admin picker uses the same supported set.
+export function DynamicIcon({ name, fallback, ...props }: DynamicIconProps) {
+  if (!name) return <>{fallback ?? null}</>;
+  const key = toKebab(name);
+  const resolved = Object.hasOwn(ICONS, key) ? key : LEGACY_ALIASES[key];
+  const Icon = Object.hasOwn(ICONS, resolved) ? ICONS[resolved] : undefined;
+  if (!Icon) return <>{fallback ?? <Folder {...props} />}</>;
   return <Icon {...props} />;
 }
 
-/**
- * Names exposed to the admin icon picker. Use current lucide names — older
- * PascalCase aliases (Home/Edit/AlertCircle/...) still work via LEGACY_ALIASES
- * for back-compat with DB rows but new picks should use the modern names.
- */
 export const POPULAR_ICONS = [
   "House",
   "Book",

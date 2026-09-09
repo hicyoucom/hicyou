@@ -103,6 +103,7 @@ const markdownAllowlist = new Set([
   "THIRD_PARTY_LICENSES.md",
   "docs/DEPLOYMENT.md",
   "docs/MIGRATING_FROM_V1.md",
+  "docs/SECURITY_PERFORMANCE_REVIEW.md",
 ]);
 const assetAllowlist = new Set([
   "app/favicon.ico",

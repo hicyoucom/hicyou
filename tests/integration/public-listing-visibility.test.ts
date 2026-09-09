@@ -21,13 +21,13 @@ mock.module("next/cache", () => ({
 }));
 
 const {
-  getBookmarkBySlug,
-  getBookmarksByCategory,
+  queryBookmarkBySlug: getBookmarkBySlug,
+  queryBookmarksByCategory: getBookmarksByCategory,
   getBookmarksByTagSlug,
   getCollectionWithBookmarksTranslated,
   getRelatedBookmarks,
   getTagsWithCount,
-  searchBookmarks,
+  querySearchBookmarks: searchBookmarks,
 } = await import("@/lib/data");
 
 const run = process.env.RUN_DB_TESTS === "1";

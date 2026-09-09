@@ -1,3 +1,4 @@
+import { invalidateAllBookmarks } from "@/lib/bookmark-cache";
 import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/client";
@@ -253,7 +254,7 @@ export async function PATCH(
       metadata: { status, isDofollow },
     });
     if (status === "published") {
-      revalidateTag(CACHE_TAGS.bookmarks, { expire: 0 });
+      invalidateAllBookmarks();
       revalidateTag(CACHE_TAGS.categories, { expire: 0 });
     }
 

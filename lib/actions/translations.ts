@@ -3,7 +3,7 @@
 import { db } from "@/db/client";
 import { bookmarks, categories, collections, translations } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { invalidateEntityTranslations } from "@/lib/translation-cache";
 import { z } from "zod";
 
 import { defaultLocale, locales } from "@/i18n/config";
@@ -11,14 +11,13 @@ import {
   batchTranslateInternal,
   type BatchTranslateInput,
 } from "@/lib/batch-translate";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import { logger } from "@/lib/logger";
 import {
   isTranslationFieldKey,
   translationEntityTypes,
   type TranslationEntityType,
 } from "@/lib/translation-fields";
-import { invalidate, requireAdmin, type ActionState } from "./_shared";
+import { requireAdmin, type ActionState } from "./_shared";
 
 const upsertTranslationSchema = z
   .object({
@@ -117,8 +116,11 @@ export async function upsertTranslation(
         set: { value: input.value, updatedAt: new Date() },
       });
 
-    invalidate(CACHE_TAGS.translations);
-    revalidatePath(`/${input.locale}`, "layout");
+    invalidateEntityTranslations(
+      input.entityType,
+      [input.entityId],
+      input.locale,
+    );
     return { success: true };
   } catch (error) {
     logger.error("Error upserting translation:", error);
@@ -133,10 +135,5 @@ export async function batchTranslate(
   const authError = await requireAdmin();
   if (authError) return authError;
 
-  const result = await batchTranslateInternal(formData);
-  if ((result.data?.succeeded ?? 0) > 0) {
-    invalidate(CACHE_TAGS.translations);
-    revalidatePath(`/${formData.locale}`, "layout");
-  }
-  return result;
+  return batchTranslateInternal(formData);
 }

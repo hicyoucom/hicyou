@@ -15,6 +15,13 @@
       "when": 1788363977129,
       "tag": "0001_public_change_feed_integrity",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788930764925,
+      "tag": "0002_optimal_annihilus",
+      "breakpoints": true
     }
   ]
 }

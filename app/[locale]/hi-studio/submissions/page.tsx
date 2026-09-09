@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ComponentType } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -21,10 +27,19 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, ExternalLink, Clock, CheckCircle, XCircle, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import {
+  RefreshCw,
+  ExternalLink,
+  Clock,
+  CheckCircle,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+} from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import Image from "next/image";
+import { SafeExternalImage } from "@/components/safe-external-image";
 import { SubmissionDetailDialog } from "@/components/admin/submission-detail-dialog";
 import type { BadgeProps } from "@/components/ui/badge";
 import type { Faq, KeyFeature } from "@/db/schema";
@@ -42,7 +57,12 @@ interface Submission {
   logo: string | null;
   cover: string | null;
   categoryId: number | null;
-  categories: Array<{ id: number; name: string; slug: string; primary: boolean }>;
+  categories: Array<{
+    id: number;
+    name: string;
+    slug: string;
+    primary: boolean;
+  }>;
   submitterEmail: string | null;
   submitterName: string | null;
   status: string;
@@ -63,7 +83,8 @@ export default function SubmissionsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(30);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<Submission | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const fetchSubmissions = useCallback(async () => {
@@ -179,8 +200,8 @@ export default function SubmissionsPage() {
   };
 
   const toggleSelection = (id: number) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
@@ -188,22 +209,22 @@ export default function SubmissionsPage() {
     if (selectedIds.length === currentSubmissions.length) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(currentSubmissions.map(s => s.id));
+      setSelectedIds(currentSubmissions.map((s) => s.id));
     }
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <Link href="/hi-studio">
-            <Button variant="ghost" className="gap-2 mb-4">
+            <Button variant="ghost" className="mb-4 gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Dashboard
             </Button>
           </Link>
           <h1 className="text-3xl font-bold">Submission Management</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="mt-1 text-muted-foreground">
             Review and manage user submissions
           </p>
         </div>
@@ -268,11 +289,16 @@ export default function SubmissionsPage() {
               <CardDescription>All user-submitted websites</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Items per page:</span>
-              <Select value={itemsPerPage.toString()} onValueChange={(v) => {
-                setItemsPerPage(parseInt(v));
-                setCurrentPage(1);
-              }}>
+              <span className="text-sm text-muted-foreground">
+                Items per page:
+              </span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(v) => {
+                  setItemsPerPage(parseInt(v));
+                  setCurrentPage(1);
+                }}
+              >
                 <SelectTrigger className="w-[100px]">
                   <SelectValue />
                 </SelectTrigger>
@@ -297,23 +323,27 @@ export default function SubmissionsPage() {
 
             <TabsContent value={activeTab} className="mt-4">
               {selectedIds.length > 0 && (
-                <div className="mb-4 flex items-center gap-2 p-3 bg-muted rounded-md">
+                <div className="mb-4 flex items-center gap-2 rounded-md bg-muted p-3">
                   <span className="text-sm">{selectedIds.length} selected</span>
                   <Button size="sm" onClick={handleBatchApprove}>
                     Approve Selected
                   </Button>
-                  <Button size="sm" variant="destructive" onClick={handleBatchReject}>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleBatchReject}
+                  >
                     Reject Selected
                   </Button>
                 </div>
               )}
 
               {loading ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   Loading...
                 </div>
               ) : currentSubmissions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   No submissions
                 </div>
               ) : (
@@ -324,7 +354,9 @@ export default function SubmissionsPage() {
                         <TableRow>
                           <TableHead className="w-[50px]">
                             <Checkbox
-                              checked={selectedIds.length === currentSubmissions.length}
+                              checked={
+                                selectedIds.length === currentSubmissions.length
+                              }
                               onCheckedChange={toggleSelectAll}
                             />
                           </TableHead>
@@ -341,13 +373,15 @@ export default function SubmissionsPage() {
                             <TableCell>
                               <Checkbox
                                 checked={selectedIds.includes(submission.id)}
-                                onCheckedChange={() => toggleSelection(submission.id)}
+                                onCheckedChange={() =>
+                                  toggleSelection(submission.id)
+                                }
                               />
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-3">
                                 {submission.logo && (
-                                  <Image
+                                  <SafeExternalImage
                                     src={submission.logo}
                                     alt={submission.title}
                                     width={40}
@@ -364,10 +398,12 @@ export default function SubmissionsPage() {
                                   </Link>
                                   {getSafeExternalHref(submission.url) ? (
                                     <a
-                                      href={getSafeExternalHref(submission.url)!}
+                                      href={getSafeExternalHref(
+                                        submission.url,
+                                      )!}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                                      className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
                                     >
                                       {submission.url}
                                       <ExternalLink className="h-3 w-3" />
@@ -393,7 +429,9 @@ export default function SubmissionsPage() {
                                 </div>
                               )}
                             </TableCell>
-                            <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                            <TableCell>
+                              {getStatusBadge(submission.status)}
+                            </TableCell>
                             <TableCell className="text-sm">
                               {formatDate(submission.createdAt)}
                             </TableCell>
@@ -403,7 +441,9 @@ export default function SubmissionsPage() {
                                 variant="outline"
                                 onClick={async () => {
                                   // Fetch full submission details
-                                  const response = await fetch(`/api/admin/submissions/${submission.id}`);
+                                  const response = await fetch(
+                                    `/api/admin/submissions/${submission.id}`,
+                                  );
                                   if (response.ok) {
                                     const data = await response.json();
                                     setSelectedSubmission(data.submission);
@@ -421,15 +461,19 @@ export default function SubmissionsPage() {
                   </div>
 
                   {/* Pagination */}
-                  <div className="flex items-center justify-between mt-4">
+                  <div className="mt-4 flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">
-                      Showing {startIndex + 1} to {Math.min(endIndex, submissions.length)} of {submissions.length} submissions
+                      Showing {startIndex + 1} to{" "}
+                      {Math.min(endIndex, submissions.length)} of{" "}
+                      {submissions.length} submissions
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={currentPage === 1}
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -441,7 +485,9 @@ export default function SubmissionsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
                         disabled={currentPage === totalPages}
                       >
                         Next

@@ -18,7 +18,8 @@ mock.module("next/cache", () => ({
   unstable_cache: (fn: unknown) => fn,
 }));
 
-const { getBookmarksByCategory } = await import("@/lib/data");
+const { queryBookmarksByCategory: getBookmarksByCategory } =
+  await import("@/lib/data");
 const { getProductBySlug, listProducts } = await import("@/lib/data/products");
 
 const run = process.env.RUN_DB_TESTS === "1";
@@ -141,22 +142,34 @@ suite("bookmark multi-category assignments (integration)", () => {
 
   test("secondary category pages and API filters include the bookmark once", async () => {
     const page = await getBookmarksByCategory(categoryIds[1], { pageSize: 30 });
-    expect(page.bookmarks.filter((bookmark) => bookmark.id === bookmarkId)).toHaveLength(1);
+    expect(
+      page.bookmarks.filter((bookmark) => bookmark.id === bookmarkId),
+    ).toHaveLength(1);
 
     const apiPage = await listProducts({
       limit: 100,
       categorySlug: CATEGORY_SLUGS[1],
       include: new Set(),
     });
-    expect(apiPage.data.filter((product) => product.source_id === bookmarkId)).toHaveLength(1);
+    expect(
+      apiPage.data.filter((product) => product.source_id === bookmarkId),
+    ).toHaveLength(1);
   });
 
   test("public product keeps category and adds ordered categories", async () => {
     const product = await getProductBySlug(BOOKMARK_SLUG, new Set());
     expect(product?.category?.slug).toBe(CATEGORY_SLUGS[0]);
     expect(product?.categories).toEqual([
-      { slug: CATEGORY_SLUGS[0], name: "Integration category 0", primary: true },
-      { slug: CATEGORY_SLUGS[1], name: "Integration category 1", primary: false },
+      {
+        slug: CATEGORY_SLUGS[0],
+        name: "Integration category 0",
+        primary: true,
+      },
+      {
+        slug: CATEGORY_SLUGS[1],
+        name: "Integration category 1",
+        primary: false,
+      },
     ]);
   });
 });

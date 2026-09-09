@@ -1,7 +1,7 @@
 // Shared helpers + types for the server-action modules under lib/actions/.
 // NOT a "use server" file (it exports a sync helper + a type), so the domain
 // action files import from here.
-import { updateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { requireAdmin as requireAdminAuth } from "@/lib/admin-auth";
 import { type CacheTag } from "@/lib/cache-tags";
 
@@ -22,7 +22,10 @@ export type ActionState<T = unknown> = {
 // the underlying lib/data.ts unstable_cache wrappers. Mutations call both so
 // the layered cache stays consistent without one side falling stale.
 export function invalidate(...tags: CacheTag[]) {
-  for (const t of tags) updateTag(t);
+  for (const t of tags) {
+    updateTag(t);
+    if (t === "bookmarks") revalidatePath("/[locale]/[slug]", "page");
+  }
 }
 
 export async function requireAdmin(): Promise<ActionState | null> {

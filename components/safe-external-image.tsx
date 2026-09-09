@@ -11,6 +11,8 @@ interface SafeExternalImageProps {
   style?: CSSProperties;
   width?: number;
   height?: number;
+  loading?: "eager" | "lazy";
+  fetchPriority?: "high" | "low" | "auto";
 }
 
 export function SafeExternalImage({
@@ -20,6 +22,8 @@ export function SafeExternalImage({
   style,
   width,
   height,
+  loading = "lazy",
+  fetchPriority,
 }: SafeExternalImageProps) {
   const safeSource = normalizePublicImageSource(src);
   const [failedSource, setFailedSource] = useState<string | null>(null);
@@ -34,7 +38,8 @@ export function SafeExternalImage({
       key={safeSource}
       src={safeSource}
       alt={alt}
-      loading="lazy"
+      loading={loading}
+      fetchPriority={fetchPriority}
       decoding="async"
       referrerPolicy="no-referrer"
       className={className}

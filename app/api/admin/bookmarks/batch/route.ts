@@ -1,3 +1,4 @@
+import { invalidateAllBookmarks } from "@/lib/bookmark-cache";
 import { revalidateTag } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -45,7 +46,9 @@ const batchSchema = z
               .trim()
               .url()
               .max(2_048)
-              .refine((value) => ["http:", "https:"].includes(new URL(value).protocol)),
+              .refine((value) =>
+                ["http:", "https:"].includes(new URL(value).protocol),
+              ),
             title: z.string().trim().min(1).max(500),
             slug: z
               .string()
@@ -104,7 +107,7 @@ export async function POST(request: NextRequest) {
       parsed.data.bookmarks as BookmarkBatchItem[],
     );
     if (results.some((result) => result.status === "created")) {
-      revalidateTag(CACHE_TAGS.bookmarks, { expire: 0 });
+      invalidateAllBookmarks();
       revalidateTag(CACHE_TAGS.categories, { expire: 0 });
     }
 

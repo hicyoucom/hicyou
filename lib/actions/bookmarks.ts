@@ -1,12 +1,13 @@
 "use server";
 
 import { db } from "@/db/client";
-import { bookmarks } from "@/db/schema";
+import { bookmarks, bookmarkCategories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { generateSlug } from "@/lib/utils";
 import { fetchSiteMetadata } from "@/lib/fetch-metadata";
 import { isAIConfigured, generateWebsiteContent } from "@/lib/ai-config";
+import { invalidateBookmark } from "@/lib/bookmark-cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { MAX_BOOKMARK_TITLE_LENGTH } from "@/lib/bookmark-limits";
 import { logger } from "@/lib/logger";
@@ -291,6 +292,22 @@ export async function updateBookmark(
       (formData.categoryIds ?? []).map((category) => parseInt(category, 10)),
     );
 
+    const [previous] = await db
+      .select({ slug: bookmarks.slug, isArchived: bookmarks.isArchived })
+      .from(bookmarks)
+      .where(eq(bookmarks.id, Number(id)))
+      .limit(1);
+    if (!previous) return { error: "Bookmark not found" };
+    const previousAssignments = await db
+      .select({ id: bookmarkCategories.categoryId })
+      .from(bookmarkCategories)
+      .where(eq(bookmarkCategories.bookmarkId, Number(id)));
+    const membershipChanged =
+      previous.isArchived !== isArchived ||
+      previousAssignments
+        .map((row) => row.id)
+        .sort((a, b) => a - b)
+        .join(",") !== [...parsedCategoryIds].sort((a, b) => a - b).join(",");
     await db.transaction(async (tx) => {
       await tx
         .update(bookmarks)
@@ -322,8 +339,13 @@ export async function updateBookmark(
     });
 
     revalidatePath("/hi-studio");
-    revalidatePath("/");
-    invalidate(CACHE_TAGS.bookmarks);
+    invalidateBookmark(
+      { id: Number(id), slug },
+      {
+        previousSlug: previous.slug,
+        membershipChanged,
+      },
+    );
 
     return { success: true };
   } catch (err) {
@@ -351,8 +373,6 @@ export async function deleteBookmark(
       return { error: "No bookmark ID provided" };
     }
 
-    const url = formData.url;
-
     const now = new Date();
     const deleted = await db
       .update(bookmarks)
@@ -363,16 +383,14 @@ export async function deleteBookmark(
         updatedAt: now,
       })
       .where(eq(bookmarks.id, Number(id)))
-      .returning({ id: bookmarks.id });
+      .returning({ id: bookmarks.id, slug: bookmarks.slug });
 
     if (deleted.length === 0) {
       return { error: "Bookmark not found" };
     }
 
     revalidatePath("/hi-studio");
-    revalidatePath("/");
-    revalidatePath(`/${encodeURIComponent(url)}`);
-    invalidate(CACHE_TAGS.bookmarks);
+    invalidateBookmark(deleted[0], { membershipChanged: true });
 
     return { success: true };
   } catch (err) {

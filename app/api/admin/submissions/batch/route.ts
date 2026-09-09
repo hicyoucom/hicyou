@@ -1,3 +1,4 @@
+import { invalidateAllBookmarks } from "@/lib/bookmark-cache";
 import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/client";
@@ -42,7 +43,7 @@ async function sendEmailsBatched(
 
 function revalidateDirectoryCaches() {
   try {
-    revalidateTag(CACHE_TAGS.bookmarks, { expire: 0 });
+    invalidateAllBookmarks();
     revalidateTag(CACHE_TAGS.categories, { expire: 0 });
   } catch (error) {
     // The database transaction has already committed at this point. A

@@ -1,3 +1,4 @@
+import { invalidateAllBookmarks } from "@/lib/bookmark-cache";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -17,10 +18,15 @@ const requestSchema = z.object({
 export async function POST(request: Request) {
   const auth = await requireAdmin();
   if (!auth.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: auth.status });
+    return NextResponse.json(
+      { error: "Unauthorized" },
+      { status: auth.status },
+    );
   }
 
-  const parsed = requestSchema.safeParse(await request.json().catch(() => null));
+  const parsed = requestSchema.safeParse(
+    await request.json().catch(() => null),
+  );
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
@@ -32,7 +38,7 @@ export async function POST(request: Request) {
   const status = result.failedBookmarkIds.length > 0 ? 207 : 200;
 
   if (result.applied > 0) {
-    revalidateTag(CACHE_TAGS.bookmarks, { expire: 0 });
+    invalidateAllBookmarks();
     revalidateTag(CACHE_TAGS.categories, { expire: 0 });
     revalidatePath("/", "layout");
   }
@@ -51,5 +57,8 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ ok: result.failedBookmarkIds.length === 0, ...result }, { status });
+  return NextResponse.json(
+    { ok: result.failedBookmarkIds.length === 0, ...result },
+    { status },
+  );
 }

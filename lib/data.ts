@@ -24,13 +24,14 @@ import {
   and,
   inArray,
   isNull,
-  exists,
   ne,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import * as nextCache from "next/cache";
 import { cache } from "react";
-import { CACHE_TAGS } from "@/lib/cache-tags";
+import { CACHE_TAGS, bookmarkTag, translationTag } from "@/lib/cache-tags";
+import { normalizeSearchTerm, searchPattern } from "@/lib/search";
 import { publicBookmarkCondition } from "@/lib/public-bookmark";
 import {
   isTranslationComplete,
@@ -126,33 +127,15 @@ export const getAllBookmarks = unstable_cache(
       categories: categoryMap[row.id] ?? [],
     })) as unknown as BookmarkWithCategories[];
   },
-  ["data:getAllBookmarks"],
-  { revalidate: 3600, tags: [CACHE_TAGS.bookmarks] },
-);
-
-/**
- * The sitemap needs only public URLs and their true record update time. Keep
- * this narrow instead of loading the admin-facing bookmark list and filtering
- * it in memory.
- */
-export const getPublicBookmarkSitemapEntries = unstable_cache(
-  async (): Promise<{ slug: string; updatedAt: string }[]> => {
-    if (!process.env.DATABASE_URL) return [];
-
-    const rows = await db
-      .select({ slug: bookmarks.slug, updatedAt: bookmarks.updatedAt })
-      .from(bookmarks)
-      .where(publicBookmarkCondition());
-
-    // unstable_cache serializes its return value. Emit the sitemap's native
-    // wire format explicitly instead of relying on Date round-tripping.
-    return rows.map((row) => ({
-      slug: row.slug,
-      updatedAt: row.updatedAt.toISOString(),
-    }));
+  ["data:getAllBookmarks:v3"],
+  {
+    revalidate: 3600,
+    tags: [
+      CACHE_TAGS.bookmarks,
+      CACHE_TAGS.adminBookmarks,
+      CACHE_TAGS.categories,
+    ],
   },
-  ["data:getPublicBookmarkSitemapEntries"],
-  { revalidate: 3600, tags: [CACHE_TAGS.bookmarks] },
 );
 
 /**
@@ -183,7 +166,14 @@ export const getCategoryBookmarkCounts = unstable_cache(
     return out;
   },
   ["data:getCategoryBookmarkCounts"],
-  { revalidate: 3600, tags: [CACHE_TAGS.bookmarks, CACHE_TAGS.categories] },
+  {
+    revalidate: 3600,
+    tags: [
+      CACHE_TAGS.bookmarks,
+      CACHE_TAGS.bookmarkCounts,
+      CACHE_TAGS.categories,
+    ],
+  },
 );
 
 /**
@@ -193,7 +183,7 @@ export const getCategoryBookmarkCounts = unstable_cache(
  * scales with the category size, not the whole table. Returns the page slice
  * plus the total matching count (for pagination).
  */
-export async function getBookmarksByCategory(
+export async function queryBookmarksByCategory(
   categoryId: number,
   opts: { search?: string; page?: number; pageSize?: number } = {},
 ): Promise<{
@@ -210,7 +200,9 @@ export async function getBookmarksByCategory(
   ];
 
   if (opts.search) {
-    const pattern = `%${opts.search}%`;
+    const normalized = normalizeSearchTerm(opts.search);
+    if (!normalized) return { bookmarks: [], total: 0 };
+    const pattern = searchPattern(normalized);
     conditions.push(
       or(
         ilike(bookmarks.title, pattern),
@@ -222,38 +214,46 @@ export async function getBookmarksByCategory(
 
   const where = and(...conditions);
 
-  const [countResult, results] = await Promise.all([
-    db
-      .select({ count: count() })
-      .from(bookmarkCategories)
-      .innerJoin(bookmarks, eq(bookmarkCategories.bookmarkId, bookmarks.id))
-      .where(where),
-    db
-      .select({
-        id: bookmarks.id,
-        title: bookmarks.title,
-        url: bookmarks.url,
-        slug: bookmarks.slug,
-        description: bookmarks.description,
-        categoryId: bookmarks.categoryId,
-        favicon: bookmarks.favicon,
-        ogImage: bookmarks.ogImage,
-        overview: bookmarks.overview,
-        isArchived: bookmarks.isArchived,
-        isFavorite: bookmarks.isFavorite,
-        isDofollow: bookmarks.isDofollow,
-        createdAt: bookmarks.createdAt,
-        updatedAt: bookmarks.updatedAt,
-        category: categories,
-      })
-      .from(bookmarkCategories)
-      .innerJoin(bookmarks, eq(bookmarkCategories.bookmarkId, bookmarks.id))
-      .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
-      .where(where)
-      .orderBy(desc(bookmarks.createdAt))
-      .limit(pageSize)
-      .offset((page - 1) * pageSize),
-  ]);
+  const [countResult, results] = await db.transaction(async (tx) => {
+    await tx.execute(sql`set local statement_timeout = '2000ms'`);
+    return Promise.all([
+      tx
+        .select({ count: count() })
+        .from(bookmarkCategories)
+        .innerJoin(bookmarks, eq(bookmarkCategories.bookmarkId, bookmarks.id))
+        .where(where),
+      tx
+        .select({
+          id: bookmarks.id,
+          title: bookmarks.title,
+          url: bookmarks.url,
+          slug: bookmarks.slug,
+          description: bookmarks.description,
+          categoryId: bookmarks.categoryId,
+          favicon: bookmarks.favicon,
+          ogImage: bookmarks.ogImage,
+          overview: sql<
+            string | null
+          >`case when coalesce(${bookmarks.description}, '') = '' then left(${bookmarks.overview}, 320) else null end`,
+          isArchived: bookmarks.isArchived,
+          isFavorite: bookmarks.isFavorite,
+          isDofollow: bookmarks.isDofollow,
+          createdAt: bookmarks.createdAt,
+          updatedAt: bookmarks.updatedAt,
+          category: categories,
+        })
+        .from(bookmarkCategories)
+        .innerJoin(bookmarks, eq(bookmarkCategories.bookmarkId, bookmarks.id))
+        .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
+        .where(where)
+        .orderBy(
+          sql`${bookmarks.createdAt} desc nulls last`,
+          sql`${bookmarks.id} desc nulls last`,
+        )
+        .limit(pageSize)
+        .offset((page - 1) * pageSize),
+    ]);
+  });
 
   return {
     bookmarks: results.map((row) => ({
@@ -262,6 +262,50 @@ export async function getBookmarksByCategory(
     })) as unknown as (Bookmark & { category: Category | null })[],
     total: countResult[0].count,
   };
+}
+
+const cachedBookmarksByCategory = unstable_cache(
+  queryBookmarksByCategory,
+  ["data:category-bookmarks:v3"],
+  {
+    revalidate: 3600,
+    tags: [
+      CACHE_TAGS.bookmarks,
+      CACHE_TAGS.bookmarkLists,
+      CACHE_TAGS.categories,
+    ],
+  },
+);
+const cachedCategorySearch = unstable_cache(
+  queryBookmarksByCategory,
+  ["data:category-search:v3"],
+  {
+    revalidate: 60,
+    tags: [
+      CACHE_TAGS.bookmarks,
+      CACHE_TAGS.bookmarkLists,
+      CACHE_TAGS.categories,
+    ],
+  },
+);
+export async function getBookmarksByCategory(
+  categoryId: number,
+  opts: {
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  } = {},
+) {
+  const search = normalizeSearchTerm(opts.search ?? "");
+  if (opts.search?.trim() && !search) return { bookmarks: [], total: 0 };
+  return (search ? cachedCategorySearch : cachedBookmarksByCategory)(
+    categoryId,
+    {
+      search,
+      page: opts.page ?? 1,
+      pageSize: opts.pageSize ?? 30,
+    },
+  );
 }
 
 export async function getRelatedBookmarks(
@@ -294,32 +338,49 @@ export async function getRelatedBookmarks(
     .limit(limit);
   if (candidates.length === 0) return [];
 
-  const results = await db
-    .select({
-      id: bookmarks.id,
-      title: bookmarks.title,
-      url: bookmarks.url,
-      slug: bookmarks.slug,
-      description: bookmarks.description,
-      categoryId: bookmarks.categoryId,
-      favicon: bookmarks.favicon,
-      ogImage: bookmarks.ogImage,
-      overview: bookmarks.overview,
-      isArchived: bookmarks.isArchived,
-      isFavorite: bookmarks.isFavorite,
-      isDofollow: bookmarks.isDofollow,
-      createdAt: bookmarks.createdAt,
-      updatedAt: bookmarks.updatedAt,
-      category: categories,
-    })
-    .from(bookmarks)
-    .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
-    .where(
-      inArray(
-        bookmarks.id,
-        candidates.map((candidate) => candidate.id),
-      ),
-    );
+  const results = await unstable_cache(
+    async () =>
+      db
+        .select({
+          id: bookmarks.id,
+          title: bookmarks.title,
+          url: bookmarks.url,
+          slug: bookmarks.slug,
+          description: bookmarks.description,
+          categoryId: bookmarks.categoryId,
+          favicon: bookmarks.favicon,
+          ogImage: bookmarks.ogImage,
+          overview: sql<
+            string | null
+          >`case when coalesce(${bookmarks.description}, '') = '' then left(${bookmarks.overview}, 320) else null end`,
+          isArchived: bookmarks.isArchived,
+          isFavorite: bookmarks.isFavorite,
+          isDofollow: bookmarks.isDofollow,
+          createdAt: bookmarks.createdAt,
+          updatedAt: bookmarks.updatedAt,
+          category: categories,
+        })
+        .from(bookmarks)
+        .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
+        .where(
+          and(
+            publicBookmarkCondition(),
+            inArray(
+              bookmarks.id,
+              candidates.map((candidate) => candidate.id),
+            ),
+          ),
+        ),
+    ["data:related:v3", candidates.map((row) => row.id).join(",")],
+    {
+      revalidate: 3600,
+      tags: [
+        CACHE_TAGS.bookmarks,
+        CACHE_TAGS.categories,
+        ...candidates.map((row) => bookmarkTag(row.id)),
+      ],
+    },
+  )();
 
   const byId = new Map(results.map((row) => [row.id, row]));
   return candidates
@@ -340,71 +401,88 @@ export const getBookmarksCount = unstable_cache(
       .where(publicBookmarkCondition());
     return result[0].count;
   },
-  ["data:getBookmarksCount"],
-  { revalidate: 3600, tags: [CACHE_TAGS.bookmarks] },
+  ["data:getBookmarksCount:v3"],
+  { revalidate: 3600, tags: [CACHE_TAGS.bookmarks, CACHE_TAGS.bookmarkCounts] },
 );
 
-export async function searchBookmarks(
+export async function querySearchBookmarks(
   term: string,
 ): Promise<(Bookmark & { category: Category | null })[]> {
   if (!process.env.DATABASE_URL) {
     return [];
   }
-  const searchPattern = `%${term}%`;
-  const results = await db
-    .select({
-      id: bookmarks.id,
-      title: bookmarks.title,
-      url: bookmarks.url,
-      slug: bookmarks.slug,
-      description: bookmarks.description,
-      categoryId: bookmarks.categoryId,
-      favicon: bookmarks.favicon,
-      ogImage: bookmarks.ogImage,
-      overview: bookmarks.overview, // needed for search highlighting or context
-      isArchived: bookmarks.isArchived,
-      isFavorite: bookmarks.isFavorite,
-      isDofollow: bookmarks.isDofollow,
-      category: categories,
-    })
-    .from(bookmarks)
-    .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
-    .where(
-      and(
-        publicBookmarkCondition(),
-        or(
-          ilike(bookmarks.title, searchPattern),
-          ilike(bookmarks.description, searchPattern),
-          ilike(bookmarks.overview, searchPattern),
-          // `notes` is an internal/private field — excluded from public search
-          // to avoid leaking note contents via the result side channel.
-          ilike(categories.name, searchPattern),
-          exists(
-            db
-              .select({ id: bookmarkCategories.bookmarkId })
-              .from(bookmarkCategories)
-              .innerJoin(
-                categories,
-                eq(bookmarkCategories.categoryId, categories.id),
-              )
-              .where(
-                and(
-                  eq(bookmarkCategories.bookmarkId, bookmarks.id),
-                  ilike(categories.name, searchPattern),
-                  eq(categories.status, "active"),
-                ),
-              ),
-          ),
+  const normalized = normalizeSearchTerm(term);
+  if (!normalized) return [];
+  const pattern = searchPattern(normalized);
+  const results = await db.transaction(async (tx) => {
+    await tx.execute(sql`set local statement_timeout = '2000ms'`);
+    return tx
+      .select({
+        id: bookmarks.id,
+        title: bookmarks.title,
+        url: bookmarks.url,
+        slug: bookmarks.slug,
+        description: bookmarks.description,
+        categoryId: bookmarks.categoryId,
+        favicon: bookmarks.favicon,
+        ogImage: bookmarks.ogImage,
+        overview: sql<
+          string | null
+        >`case when coalesce(${bookmarks.description}, '') = '' then left(${bookmarks.overview}, 320) else null end`, // needed for search highlighting or context
+        isArchived: bookmarks.isArchived,
+        isFavorite: bookmarks.isFavorite,
+        isDofollow: bookmarks.isDofollow,
+        category: categories,
+      })
+      .from(bookmarks)
+      .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
+      .where(
+        and(
+          publicBookmarkCondition(),
+          // Separate text and category matches so PostgreSQL can use the GIN
+          // indexes and the existing category-to-bookmark index independently.
+          sql`${bookmarks.id} in (
+          select id from bookmarks where status = 'published' and is_archived = false and deleted_at is null
+            and (title ilike ${pattern} or description ilike ${pattern} or overview ilike ${pattern})
+          union
+          select b.id from bookmarks b join categories c on c.id = b.category_id
+            where c.name ilike ${pattern}
+          union
+          select bc.bookmark_id from bookmark_categories bc join categories c on c.id = bc.category_id
+            where c.status = 'active' and c.name ilike ${pattern}
+        )`,
         ),
-      ),
-    )
-    .orderBy(desc(bookmarks.createdAt))
-    .limit(50);
+      )
+      .orderBy(
+        sql`${bookmarks.createdAt} desc nulls last`,
+        sql`${bookmarks.id} desc nulls last`,
+      )
+      .limit(50);
+  });
 
   return results.map((row) => ({
     ...row,
     category: row.category,
   })) as unknown as (Bookmark & { category: Category | null })[];
+}
+
+const cachedSearchBookmarks = unstable_cache(
+  querySearchBookmarks,
+  ["data:search-bookmarks:v3"],
+  {
+    revalidate: 60,
+    tags: [
+      CACHE_TAGS.bookmarks,
+      CACHE_TAGS.bookmarkLists,
+      CACHE_TAGS.categories,
+    ],
+  },
+);
+
+export async function searchBookmarks(term: string) {
+  const normalized = normalizeSearchTerm(term);
+  if (!normalized) return [];
+  return cachedSearchBookmarks(normalized);
 }
 
 export const getAllCategories = unstable_cache(
@@ -442,7 +520,7 @@ export async function getAllCategoriesTranslated(
 // React cache() dedupes per RSC request (generateMetadata + Page share one
 // render pass and used to each run these queries). RSC pages only — do NOT
 // call cache()-wrapped functions from Route Handlers or Server Actions.
-async function _getBookmarkBySlug(
+export async function queryBookmarkBySlug(
   slug: string,
 ): Promise<BookmarkWithCategories | null> {
   if (!process.env.DATABASE_URL) {
@@ -469,26 +547,57 @@ async function _getBookmarkBySlug(
   };
 }
 
-export const getBookmarkBySlug = cache(_getBookmarkBySlug);
-
-export async function getCategoryBySlug(
-  slug: string,
-): Promise<Category | null> {
-  if (!process.env.DATABASE_URL) {
-    return null;
-  }
-  const results = await db
-    .select()
-    .from(categories)
-    .where(and(eq(categories.slug, slug), eq(categories.status, "active")))
+export const getBookmarkBySlug = cache(async (slug: string) => {
+  if (!process.env.DATABASE_URL) return null;
+  const [identity] = await db
+    .select({ id: bookmarks.id })
+    .from(bookmarks)
+    .where(and(eq(bookmarks.slug, slug), publicBookmarkCondition()))
     .limit(1);
+  if (!identity) return null;
+  const result = await unstable_cache(
+    () => queryBookmarkBySlug(slug),
+    ["data:bookmark-detail:v3", slug],
+    {
+      revalidate: 3600,
+      tags: [
+        CACHE_TAGS.bookmarks,
+        bookmarkTag(identity.id),
+        CACHE_TAGS.categories,
+      ],
+    },
+  )();
+  if (!result) return null;
+  return {
+    ...result,
+    createdAt: new Date(result.createdAt),
+    updatedAt: new Date(result.updatedAt),
+    publishedAt: result.publishedAt ? new Date(result.publishedAt) : null,
+    deletedAt: result.deletedAt ? new Date(result.deletedAt) : null,
+    lastVisited: result.lastVisited ? new Date(result.lastVisited) : null,
+  };
+});
 
-  if (results.length === 0) {
-    return null;
-  }
+export const getCategoryBySlug = unstable_cache(
+  async function queryCategoryBySlug(slug: string): Promise<Category | null> {
+    if (!process.env.DATABASE_URL) {
+      return null;
+    }
+    const results = await db
+      .select()
+      .from(categories)
+      .where(and(eq(categories.slug, slug), eq(categories.status, "active")))
+      .limit(1);
 
-  return results[0];
-}
+    if (results.length === 0) {
+      return null;
+    }
+
+    return results[0];
+  },
+  ["data:category-by-slug:v3"],
+  { revalidate: 3600, tags: [CACHE_TAGS.categories] },
+);
 
 /**
  * Get a category by slug with translations applied for a given locale.
@@ -523,7 +632,9 @@ export const getFeaturedBookmarks = unstable_cache(
         categoryId: bookmarks.categoryId,
         favicon: bookmarks.favicon,
         ogImage: bookmarks.ogImage,
-        overview: bookmarks.overview,
+        overview: sql<
+          string | null
+        >`case when coalesce(${bookmarks.description}, '') = '' then left(${bookmarks.overview}, 320) else null end`,
         isArchived: bookmarks.isArchived,
         isFavorite: bookmarks.isFavorite,
         isDofollow: bookmarks.isDofollow,
@@ -532,6 +643,10 @@ export const getFeaturedBookmarks = unstable_cache(
       .from(bookmarks)
       .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
       .where(and(eq(bookmarks.isFavorite, true), publicBookmarkCondition()))
+      .orderBy(
+        sql`${bookmarks.createdAt} desc nulls last`,
+        sql`${bookmarks.id} desc nulls last`,
+      )
       .limit(limit);
 
     return results.map((row) => ({
@@ -540,7 +655,14 @@ export const getFeaturedBookmarks = unstable_cache(
     })) as unknown as (Bookmark & { category: Category | null })[];
   },
   ["data:getFeaturedBookmarks"],
-  { revalidate: 3600, tags: [CACHE_TAGS.bookmarks] },
+  {
+    revalidate: 3600,
+    tags: [
+      CACHE_TAGS.bookmarks,
+      CACHE_TAGS.bookmarkLists,
+      CACHE_TAGS.categories,
+    ],
+  },
 );
 
 // Get latest bookmarks ordered by creation date. Cached like the above —
@@ -562,7 +684,9 @@ export const getLatestBookmarks = unstable_cache(
         categoryId: bookmarks.categoryId,
         favicon: bookmarks.favicon,
         ogImage: bookmarks.ogImage,
-        overview: bookmarks.overview,
+        overview: sql<
+          string | null
+        >`case when coalesce(${bookmarks.description}, '') = '' then left(${bookmarks.overview}, 320) else null end`,
         isArchived: bookmarks.isArchived,
         isFavorite: bookmarks.isFavorite,
         isDofollow: bookmarks.isDofollow,
@@ -572,7 +696,10 @@ export const getLatestBookmarks = unstable_cache(
       .from(bookmarks)
       .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
       .where(publicBookmarkCondition())
-      .orderBy(desc(bookmarks.createdAt))
+      .orderBy(
+        sql`${bookmarks.createdAt} desc nulls last`,
+        sql`${bookmarks.id} desc nulls last`,
+      )
       .limit(limit);
 
     return results.map((row) => ({
@@ -581,7 +708,14 @@ export const getLatestBookmarks = unstable_cache(
     })) as unknown as (Bookmark & { category: Category | null })[];
   },
   ["data:getLatestBookmarks"],
-  { revalidate: 3600, tags: [CACHE_TAGS.bookmarks] },
+  {
+    revalidate: 3600,
+    tags: [
+      CACHE_TAGS.bookmarks,
+      CACHE_TAGS.bookmarkLists,
+      CACHE_TAGS.categories,
+    ],
+  },
 );
 
 // ============ Tag Queries ============
@@ -659,7 +793,9 @@ export async function getBookmarksByTagSlug(
         categoryId: bookmarks.categoryId,
         favicon: bookmarks.favicon,
         ogImage: bookmarks.ogImage,
-        overview: bookmarks.overview,
+        overview: sql<
+          string | null
+        >`case when coalesce(${bookmarks.description}, '') = '' then left(${bookmarks.overview}, 320) else null end`,
         isArchived: bookmarks.isArchived,
         isFavorite: bookmarks.isFavorite,
         isDofollow: bookmarks.isDofollow,
@@ -670,7 +806,10 @@ export async function getBookmarksByTagSlug(
       .innerJoin(bookmarks, eq(bookmarkTags.bookmarkId, bookmarks.id))
       .leftJoin(categories, eq(bookmarks.categoryId, categories.id))
       .where(and(eq(bookmarkTags.tagId, tag.id), publicBookmarkCondition()))
-      .orderBy(desc(bookmarks.createdAt))
+      .orderBy(
+        sql`${bookmarks.createdAt} desc nulls last`,
+        sql`${bookmarks.id} desc nulls last`,
+      )
       .limit(pageSize)
       .offset((page - 1) * pageSize),
   ]);
@@ -755,7 +894,9 @@ async function getCollectionWithBookmarks(slug: string): Promise<{
       categoryId: bookmarks.categoryId,
       favicon: bookmarks.favicon,
       ogImage: bookmarks.ogImage,
-      overview: bookmarks.overview,
+      overview: sql<
+        string | null
+      >`case when coalesce(${bookmarks.description}, '') = '' then left(${bookmarks.overview}, 320) else null end`,
       isArchived: bookmarks.isArchived,
       isFavorite: bookmarks.isFavorite,
       isDofollow: bookmarks.isDofollow,
@@ -859,17 +1000,29 @@ export const getTranslationsForEntity = cache(
     locale: string,
   ): Promise<Record<string, string>> => {
     if (!process.env.DATABASE_URL) return {};
-    const results = await db
-      .select({ field: translations.field, value: translations.value })
-      .from(translations)
-      .where(
-        and(
-          eq(translations.entityType, entityType),
-          eq(translations.entityId, entityId),
-          eq(translations.locale, locale),
-        ),
-      );
-    return Object.fromEntries(results.map((r) => [r.field, r.value]));
+    return unstable_cache(
+      async () => {
+        const results = await db
+          .select({ field: translations.field, value: translations.value })
+          .from(translations)
+          .where(
+            and(
+              eq(translations.entityType, entityType),
+              eq(translations.entityId, entityId),
+              eq(translations.locale, locale),
+            ),
+          );
+        return Object.fromEntries(results.map((r) => [r.field, r.value]));
+      },
+      ["data:translation-detail:v3", entityType, String(entityId), locale],
+      {
+        revalidate: 3600,
+        tags: [
+          CACHE_TAGS.translations,
+          translationTag(entityType, entityId, locale),
+        ],
+      },
+    )();
   },
 );
 
@@ -884,41 +1037,39 @@ export type TranslationLookup = Record<number, Record<string, string>>;
 // raw args, so any pre-sort must happen OUTSIDE the wrapper — sorting inside
 // the wrapped function would compute a deterministic SQL query but still
 // leak duplicate cache slots for the same logical input.
-const _getTranslationsForEntitiesCached = unstable_cache(
-  async (
-    entityType: string,
-    sortedIds: number[],
-    locale: string,
-  ): Promise<TranslationLookup> => {
-    if (!process.env.DATABASE_URL || !sortedIds.length || locale === "en") {
-      return {};
-    }
-    const results = await db
-      .select({
-        entityId: translations.entityId,
-        field: translations.field,
-        value: translations.value,
-      })
-      .from(translations)
-      .where(
-        and(
-          eq(translations.entityType, entityType),
-          inArray(translations.entityId, sortedIds),
-          eq(translations.locale, locale),
-        ),
-      );
+const _getTranslationsForEntities = async (
+  entityType: string,
+  sortedIds: number[],
+  locale: string,
+): Promise<TranslationLookup> => {
+  if (!process.env.DATABASE_URL || !sortedIds.length || locale === "en") {
+    return {};
+  }
+  const results = await db
+    .select({
+      entityId: translations.entityId,
+      field: translations.field,
+      value: sql<string>`case when ${entityType} = 'bookmark' and ${translations.field} = 'overview' then left(${translations.value}, 320) else ${translations.value} end`,
+    })
+    .from(translations)
+    .where(
+      and(
+        eq(translations.entityType, entityType),
+        entityType === "bookmark"
+          ? inArray(translations.field, ["title", "description", "overview"])
+          : undefined,
+        inArray(translations.entityId, sortedIds),
+        eq(translations.locale, locale),
+      ),
+    );
 
-    const out: TranslationLookup = {};
-    for (const r of results) {
-      if (!out[r.entityId]) out[r.entityId] = {};
-      out[r.entityId][r.field] = r.value;
-    }
-    return out;
-  },
-  // v2 invalidates incomplete category translations after migration 0026.
-  ["data:getTranslationsForEntities:v2"],
-  { revalidate: 3600, tags: [CACHE_TAGS.translations] },
-);
+  const out: TranslationLookup = {};
+  for (const r of results) {
+    if (!out[r.entityId]) out[r.entityId] = {};
+    out[r.entityId][r.field] = r.value;
+  }
+  return out;
+};
 
 /**
  * Batch fetch translations for multiple entities. Returns
@@ -932,7 +1083,26 @@ export async function getTranslationsForEntities(
 ): Promise<TranslationLookup> {
   if (!entityIds.length || locale === "en") return {};
   const sortedIds = [...entityIds].sort((a, b) => a - b);
-  return _getTranslationsForEntitiesCached(entityType, sortedIds, locale);
+  const output: TranslationLookup = {};
+  // Next limits tags per entry. Batch large admin consumers independently.
+  for (let offset = 0; offset < sortedIds.length; offset += 100) {
+    const ids = sortedIds.slice(offset, offset + 100);
+    Object.assign(
+      output,
+      await unstable_cache(
+        () => _getTranslationsForEntities(entityType, ids, locale),
+        ["data:translations:v3", entityType, locale, ids.join(",")],
+        {
+          revalidate: 3600,
+          tags: [
+            CACHE_TAGS.translations,
+            ...ids.map((id) => translationTag(entityType, id, locale)),
+          ],
+        },
+      )(),
+    );
+  }
+  return output;
 }
 
 /**
@@ -1029,38 +1199,40 @@ export function applyDetailTranslations<T extends Record<string, unknown>>(
   return out as T;
 }
 
+// Evaluate completeness in PostgreSQL; only IDs/counts cross the wire.
+function incompleteBookmarkTranslation(locale: string) {
+  return sql`exists (
+    select 1 from public.bookmark_translation_fields(bookmarks) required
+    where not exists (select 1 from translations t
+      where t.entity_type = 'bookmark' and t.entity_id = bookmarks.id
+        and t.locale = ${locale} and t.field = required.field
+        and public.translation_text_present(t.value))
+  )`;
+}
 export async function getUntranslatedBookmarkIds(
   locale: string,
+  limit?: number,
 ): Promise<number[]> {
   if (!process.env.DATABASE_URL) return [];
-  const [entities, translatedRows] = await Promise.all([
-    db
-      .select({
-        id: bookmarks.id,
-        title: bookmarks.title,
-        description: bookmarks.description,
-        overview: bookmarks.overview,
-        whyStartups: bookmarks.whyStartups,
-        keyFeatures: bookmarks.keyFeatures,
-        useCases: bookmarks.useCases,
-        faqs: bookmarks.faqs,
-      })
-      .from(bookmarks),
-    db
-      .select({
-        entityId: translations.entityId,
-        field: translations.field,
-        value: translations.value,
-      })
-      .from(translations)
-      .where(
-        and(
-          eq(translations.entityType, "bookmark"),
-          eq(translations.locale, locale),
-        ),
-      ),
-  ]);
-  return incompleteEntityIds("bookmark", entities, translatedRows);
+  const query = db
+    .select({ id: bookmarks.id })
+    .from(bookmarks)
+    .where(incompleteBookmarkTranslation(locale))
+    .orderBy(asc(bookmarks.id))
+    .$dynamic();
+  if (limit !== undefined)
+    query.limit(Math.max(1, Math.min(100, Math.floor(limit))));
+  return (await query).map((row) => row.id);
+}
+export async function countUntranslatedBookmarks(
+  locale: string,
+): Promise<number> {
+  if (!process.env.DATABASE_URL) return 0;
+  const [row] = await db
+    .select({ total: count() })
+    .from(bookmarks)
+    .where(incompleteBookmarkTranslation(locale));
+  return row.total;
 }
 
 export async function getUntranslatedCategoryIds(

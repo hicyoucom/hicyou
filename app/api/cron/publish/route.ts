@@ -1,3 +1,4 @@
+import { invalidateAllBookmarks } from "@/lib/bookmark-cache";
 import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/client";
@@ -114,7 +115,7 @@ async function handle(request: NextRequest) {
     }
 
     if (published.length > 0) {
-      revalidateTag(CACHE_TAGS.bookmarks, { expire: 0 });
+      invalidateAllBookmarks();
       revalidateTag(CACHE_TAGS.categories, { expire: 0 });
     }
 

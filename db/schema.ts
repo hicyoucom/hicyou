@@ -100,6 +100,7 @@ export const categories = pgTable(
     updatedAt: timestamp("updated_at"),
   },
   (t) => [
+    index("categories_name_trgm_idx").using("gin", t.name.op("gin_trgm_ops")),
     check(
       "categories_group_key_check",
       sql`${t.groupKey} in ('ai', 'build', 'work', 'growth', 'life', 'other')`,
@@ -163,6 +164,41 @@ export const bookmarks = pgTable(
     faqs: json("faqs").$type<Faq[]>(), // Array of { question: string, answer: string }
   },
   (t) => [
+    index("bookmarks_public_created_id_idx")
+      .on(t.createdAt.desc(), t.id.desc())
+      .where(
+        sql`${t.status} = 'published' and ${t.isArchived} = false and ${t.deletedAt} is null`,
+      ),
+    index("bookmarks_public_id_idx")
+      .on(t.id)
+      .where(
+        sql`${t.status} = 'published' and ${t.isArchived} = false and ${t.deletedAt} is null`,
+      ),
+    index("bookmarks_public_updated_id_idx")
+      .on(t.updatedAt, t.id)
+      .where(
+        sql`${t.status} = 'published' and ${t.isArchived} = false and ${t.deletedAt} is null`,
+      ),
+    index("bookmarks_featured_created_id_idx")
+      .on(t.createdAt.desc(), t.id.desc())
+      .where(
+        sql`${t.status} = 'published' and ${t.isArchived} = false and ${t.deletedAt} is null and ${t.isFavorite} = true`,
+      ),
+    index("bookmarks_public_title_trgm_idx")
+      .using("gin", t.title.op("gin_trgm_ops"))
+      .where(
+        sql`${t.status} = 'published' and ${t.isArchived} = false and ${t.deletedAt} is null`,
+      ),
+    index("bookmarks_public_description_trgm_idx")
+      .using("gin", t.description.op("gin_trgm_ops"))
+      .where(
+        sql`${t.status} = 'published' and ${t.isArchived} = false and ${t.deletedAt} is null`,
+      ),
+    index("bookmarks_public_overview_trgm_idx")
+      .using("gin", t.overview.op("gin_trgm_ops"))
+      .where(
+        sql`${t.status} = 'published' and ${t.isArchived} = false and ${t.deletedAt} is null`,
+      ),
     index("bookmarks_category_id_idx").on(t.categoryId),
     index("bookmarks_is_favorite_idx").on(t.isFavorite),
     index("bookmarks_created_at_idx").on(t.createdAt),
