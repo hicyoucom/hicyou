@@ -6,21 +6,32 @@ import postgres from "postgres";
 import { setTimeout as delay } from "node:timers/promises";
 import { applyOnlineIndexes } from "./online-indexes.mjs";
 
-const connectionString =
-  process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL;
-
-if (!connectionString) {
-  console.error("[migrate] DATABASE_URL is required");
-  process.exit(1);
+// This CLI is configured by the deployment operator, never by HTTP input.
+// Validate the connection target before constructing a client; keep malformed
+// URL errors generic so credentials cannot appear in startup logs.
+let connectionUrl;
+try {
+  connectionUrl = new URL(
+    process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL,
+  );
+} catch {
+  throw new Error(
+    "[migrate] Set MIGRATION_DATABASE_URL or DATABASE_URL to a valid PostgreSQL URL",
+  );
+}
+if (!["postgres:", "postgresql:"].includes(connectionUrl.protocol)) {
+  throw new Error(
+    "[migrate] The migration connection must use a PostgreSQL URL",
+  );
 }
 
 // Session advisory locks and concurrent DDL need a direct/session connection.
-if (new URL(connectionString).port === "6543") {
+if (connectionUrl.port === "6543") {
   throw new Error(
     "Set MIGRATION_DATABASE_URL to a direct or session-mode PostgreSQL connection; transaction pooling is unsupported for migrations",
   );
 }
-const client = postgres(connectionString, {
+const client = postgres(connectionUrl.toString(), {
   max: 1,
   // Keep the advisory-lock session alive even during long index builds.
   max_lifetime: 0,

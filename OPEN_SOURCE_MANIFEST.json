@@ -614,7 +614,7 @@
     },
     {
       "path": "bun.lock",
-      "sha256": "6b805e93a6ec2cfff739a94d171f3090dbc5bd947e209a66b2fbfe9732e78060",
+      "sha256": "e95ac91f48866f3f0797adde4c472068b41f73dedda0744d7010a043a93fdd5e",
       "ownership": "generated"
     },
     {
@@ -1059,7 +1059,7 @@
     },
     {
       "path": "docs/SECURITY_PERFORMANCE_REVIEW.md",
-      "sha256": "0ddc94a6e8dec7e3e4e20ca10744b37dc70af6107853bfab42dd41a220ff0cca",
+      "sha256": "66f34fb16f5b84a97844442139b53fcc4f2e1cd560a5df4f713ddc0f6974b2cc",
       "ownership": "public-owned"
     },
     {
@@ -1779,7 +1779,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "5a0e46c521b03a028400234a99633011f1f33cf4f52f52166ea68b506c491ff7",
+      "sha256": "0777c0728272c363a3470ad3d4142e146732866881f83c41b48e7a8a0acac334",
       "ownership": "generated"
     },
     {
@@ -1894,7 +1894,7 @@
     },
     {
       "path": "scripts/migrate.mjs",
-      "sha256": "391bbde70294bdc00ffad3d42fc934828710caf04923dc815ad6781e865690aa",
+      "sha256": "007ae0be9e8b6a0f98e20f8f2f50f0829193b0ea4e8fd513f9e1bbf7a4150330",
       "ownership": "generated"
     },
     {
@@ -1909,7 +1909,7 @@
     },
     {
       "path": "scripts/verify-migrations.mjs",
-      "sha256": "8de474bac9f3b7e16f7a48e0bad297b06c3766e515e932ae4a640c889da9371c",
+      "sha256": "1d456c99cc99acf836421e96e3e84f729424ccf25f6da6150401e6a85094828f",
       "ownership": "public-owned"
     },
     {

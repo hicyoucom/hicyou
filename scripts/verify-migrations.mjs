@@ -35,6 +35,16 @@ function migrate(url) {
   });
 }
 try {
+  await assert.rejects(migrate(""), /valid PostgreSQL URL/);
+  await assert.rejects(migrate("not-a-url"), /valid PostgreSQL URL/);
+  await assert.rejects(migrate("https://localhost/database"), /PostgreSQL URL/);
+  await assert.rejects(
+    migrate("postgres://localhost:6543/database"),
+    /transaction pooling is unsupported/,
+  );
+  console.log(
+    "PASS: missing, malformed, non-PostgreSQL and transaction-pooler URLs fail before connecting",
+  );
   for (const extensionSchema of ["public", "extensions"]) {
     const name = `migration_review_${randomUUID().replaceAll("-", "")}`;
     names.push(name);

@@ -149,3 +149,12 @@ The HTTP harness additionally checks repeated parameters, GET/HEAD/POST length
 limits and that valid HEAD/POST searches increment the shared request budget.
 The suspected tag-edit/detail-cache issue was excluded after tracing call sites:
 the product page does not read product tags, so no tag-cache change was made.
+
+## Merge checks
+
+GitHub's dependency scan identified [GHSA-rgj7-g3m4-5g8c](https://github.com/advisories/GHSA-rgj7-g3m4-5g8c)
+in sharp 0.35.3. The dependency and lockfile now pin the fixed 0.35.4 release.
+The migration CLI also validates the configured PostgreSQL URL explicitly,
+rejecting missing/malformed targets, unsupported protocols and transaction-pooler
+connections before opening a database client. Invalid URL diagnostics omit the
+configured value to avoid logging credentials.
